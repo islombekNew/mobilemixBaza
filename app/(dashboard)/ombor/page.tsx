@@ -52,8 +52,8 @@ export default async function OmborPage({ searchParams }: OmborPageProps) {
       </div>
 
       <PhoneFiltersBar />
-
-      <PhoneTable phones={phones} />
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <PhoneTable phones={phones as any} />
     </div>
   );
 }

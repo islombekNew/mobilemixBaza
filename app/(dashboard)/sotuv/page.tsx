@@ -35,22 +35,22 @@ export default async function SotuvPage({ searchParams }: SotuvPageProps) {
     listPhones(user, branchId, { status: "IN_STOCK" }),
     listSales(user, branchId),
   ]);
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="mb-4 text-2xl font-semibold text-white">
-          Sotuv — omborda mavjud telefonlar
-        </h1>
-        <SellPhoneList phones={phones} branchId={branchId} />
-      </div>
-
-      <div>
-        <h2 className="mb-4 text-lg font-semibold text-white">
-          Sotuvlar tarixi
-        </h2>
-        <SalesHistory sales={sales} />
-      </div>
+return (
+  <div className="space-y-8">
+    <div>
+      <h1 className="mb-4 text-2xl font-semibold text-white">
+        Sotuv — omborda mavjud telefonlar
+      </h1>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <SellPhoneList phones={phones as any} branchId={branchId} />
     </div>
-  );
-}
+
+    <div>
+      <h2 className="mb-4 text-lg font-semibold text-white">
+        Sotuvlar tarixi
+      </h2>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <SalesHistory sales={sales as any} />
+    </div>
+  </div>
+);}
