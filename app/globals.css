@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-pink: #ff4fd8;
+  --brand-purple: #a020c0;
+  --brand-dark: #1a0a2e;
+  --brand-darker: #0d0517;
+}
+
+body {
+  background-color: var(--brand-darker);
+  color: #f5f0fa;
+}
+
+.brand-gradient-text {
+  background: linear-gradient(135deg, var(--brand-pink) 0%, var(--brand-purple) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
