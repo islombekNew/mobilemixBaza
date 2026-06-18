@@ -47,7 +47,7 @@ export default async function MijozlarPage({ searchParams }: MijozlarPageProps) 
     getDebtSummary(user, branchId),
   ]);
 
-  return (
+ return (
     <div>
       <h1 className="mb-6 text-2xl font-semibold text-white">
         Mijozlar va qarz hisobi
@@ -56,7 +56,8 @@ export default async function MijozlarPage({ searchParams }: MijozlarPageProps) 
       <DebtSummaryCards summary={debtSummary} />
 
       <CustomerFiltersBar />
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <CustomerList customers={customers as any} />
     </div>
   );
