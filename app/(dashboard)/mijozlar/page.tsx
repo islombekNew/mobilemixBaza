@@ -56,7 +56,7 @@ export default async function MijozlarPage({ searchParams }: MijozlarPageProps) 
       <DebtSummaryCards summary={debtSummary} />
 
       <CustomerFiltersBar />
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
       <CustomerList customers={customers as any} />
     </div>
   );

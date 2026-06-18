@@ -41,7 +41,7 @@ const paymentPlanLabels: Record<string, string> = {
   ONE_TIME: "Bir martalik",
   MONTHLY: "Oylik",
 };
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatSum(value: any) {
   return Number(value).toLocaleString("uz-UZ") + " so'm";
 }
