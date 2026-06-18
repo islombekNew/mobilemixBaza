@@ -57,7 +57,7 @@ export default async function MijozlarPage({ searchParams }: MijozlarPageProps) 
 
       <CustomerFiltersBar />
 
-      <CustomerList customers={customers} />
+      <CustomerList customers={customers as any} />
     </div>
   );
 }

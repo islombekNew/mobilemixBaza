@@ -1,4 +1,5 @@
 "use client";
+import { Decimal } from "@prisma/client/runtime/library";
 
 import { useState } from "react";
 import clsx from "clsx";
@@ -15,8 +16,8 @@ interface CustomerRow {
   id: string;
   fullName: string;
   phoneNumber: string;
-  totalAmount: string | number;
-  paidAmount: string | number;
+  totalAmount: Decimal | number;
+  paidAmount: Decimal | number;
   dueDate: string | Date;
   paymentPlan: string;
   status: string;
@@ -41,7 +42,7 @@ const paymentPlanLabels: Record<string, string> = {
   MONTHLY: "Oylik",
 };
 
-function formatSum(value: string | number) {
+function formatSum(value: any) {
   return Number(value).toLocaleString("uz-UZ") + " so'm";
 }
 
@@ -104,7 +105,7 @@ export function CustomerList({ customers }: CustomerListProps) {
               <div className="text-right">
                 <p className="font-medium text-white">{formatSum(remaining)}</p>
                 <p className="text-xs text-gray-500">
-                  qolgan / {formatSum(customer.totalAmount)}
+                 qolgan / {formatSum(customer.totalAmount)}
                 </p>
               </div>
             </button>
