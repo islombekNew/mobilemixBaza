@@ -136,13 +136,14 @@ export async function updatePhone(
   });
 
   await prisma.auditLog.create({
-    data: {
-      action: "PHONE_UPDATED",
-      userId: user.id,
-      branchId: phone.branchId,
-      details: { phoneId, changes: input },
-    },
-  });
+  data: {
+    action: "PHONE_UPDATED",
+    userId: user.id,
+    branchId: phone.branchId,
+    // JSON.stringify ichiga oldik:
+    details: JSON.stringify({ phoneId, changes: input }), 
+  },
+});
 
   return updated;
 }
