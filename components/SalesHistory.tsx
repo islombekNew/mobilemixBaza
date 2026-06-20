@@ -54,6 +54,7 @@ export function SalesHistory({ sales }: SalesHistoryProps) {
             <th className="px-4 py-3 font-medium">Mijoz</th>
             <th className="px-4 py-3 font-medium">Sotuvchi</th>
             <th className="px-4 py-3 font-medium">Sana</th>
+            <th className="px-4 py-3 font-medium">Chek</th>
           </tr>
         </thead>
         <tbody>
@@ -91,6 +92,16 @@ export function SalesHistory({ sales }: SalesHistoryProps) {
               <td className="px-4 py-3 text-gray-400">{sale.seller.name}</td>
               <td className="px-4 py-3 text-xs text-gray-500">
                 {formatDate(sale.saleDate)}
+              </td>
+              <td className="px-4 py-3">
+                <a
+                  href={`/api/sales/${sale.id}/receipt`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-cyan-300 hover:text-cyan-200"
+                >
+                  🧾 Chek
+                </a>
               </td>
             </tr>
           ))}

@@ -4,6 +4,7 @@ import { listPhones } from "@/lib/phones";
 import { resolveBranchId } from "@/lib/access-control";
 import { PhoneTable } from "@/components/PhoneTable";
 import { AddPhoneButton } from "@/components/AddPhoneButton";
+import { ImportPhonesButton } from "@/components/ImportPhonesButton";
 import { PhoneFiltersBar } from "@/components/PhoneFiltersBar";
 import type { Branch, PhoneCondition, PhoneStatus } from "@prisma/client";
 
@@ -46,14 +47,21 @@ export default async function OmborPage({ searchParams }: OmborPageProps) {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-white">Ombor</h1>
-        <AddPhoneButton branchId={branchId} />
+        <div className="flex flex-wrap gap-2">
+          <ImportPhonesButton branchId={branchId} />
+          <AddPhoneButton branchId={branchId} />
+        </div>
       </div>
 
       <PhoneFiltersBar />
-{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <PhoneTable phones={phones as any} />
+      <PhoneTable
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        phones={phones as any}
+        branches={branches.map((b: Branch) => ({ id: b.id, name: b.name }))}
+        isOwner={user.role === "OWNER"}
+      />
     </div>
   );
 }

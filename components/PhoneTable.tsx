@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
+import { PhonePhotoUploader } from "@/components/PhonePhotoUploader";
+import { TransferPhoneButton } from "@/components/TransferPhoneButton";
 
 interface PhoneRow {
   id: string;
@@ -15,11 +17,20 @@ interface PhoneRow {
   costPrice: string | number | null;
   salePrice: string | number;
   status: string;
+  photoUrl: string | null;
+  branchId: string;
   addedBy: { id: string; name: string };
+}
+
+interface BranchOption {
+  id: string;
+  name: string;
 }
 
 interface PhoneTableProps {
   phones: PhoneRow[];
+  branches?: BranchOption[];
+  isOwner?: boolean;
 }
 
 const conditionLabels: Record<string, string> = {
@@ -33,7 +44,14 @@ function formatSum(value: string | number | null) {
   return Number(value).toLocaleString("uz-UZ") + " so'm";
 }
 
-export function PhoneTable({ phones }: PhoneTableProps) {
+/**
+ * Ombor ro'yxati — mobil ekranda ham qulay bo'lishi uchun jadval o'rniga
+ * moslashuvchan kartochkalar (grid) ishlatiladi: kichik ekranda 1 ustun,
+ * o'rtacha ekranda 2, kattada 3-4 ustun. Har bir kartochka rasm, narx,
+ * status va amallarni (rasm qo'shish, filialga ko'chirish, o'chirish) o'z
+ * ichiga oladi.
+ */
+export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTableProps) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,72 +90,74 @@ export function PhoneTable({ phones }: PhoneTableProps) {
           {error}
         </p>
       )}
-      <div className="overflow-x-auto rounded-xl border border-white/10">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/10 bg-white/5 text-left text-gray-400">
-              <th className="px-4 py-3 font-medium">Model</th>
-              <th className="px-4 py-3 font-medium">Rang / Xotira</th>
-              <th className="px-4 py-3 font-medium">IMEI</th>
-              <th className="px-4 py-3 font-medium">Holati</th>
-              <th className="px-4 py-3 font-medium">Tan narxi</th>
-              <th className="px-4 py-3 font-medium">Sotuv narxi</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Qo&apos;shgan</th>
-              <th className="px-4 py-3 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {phones.map((phone) => (
-              <tr
-                key={phone.id}
-                className="border-b border-white/5 text-gray-200 last:border-0"
-              >
-                <td className="px-4 py-3">
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {phones.map((phone) => (
+          <div
+            key={phone.id}
+            className="overflow-hidden rounded-xl border border-white/10 bg-white/5"
+          >
+            <PhonePhotoUploader phoneId={phone.id} photoUrl={phone.photoUrl} />
+
+            <div className="space-y-2 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div>
                   <div className="font-medium text-white">{phone.model}</div>
                   <div className="text-xs text-gray-500">{phone.brand}</div>
-                </td>
-                <td className="px-4 py-3">
-                  {phone.color}, {phone.storageGB}GB
-                </td>
-                <td className="px-4 py-3 font-mono text-xs">{phone.imei}</td>
-                <td className="px-4 py-3">
-                  {conditionLabels[phone.condition] ?? phone.condition}
-                </td>
-                <td className="px-4 py-3">{formatSum(phone.costPrice)}</td>
-                <td className="px-4 py-3 font-medium text-white">
-                  {formatSum(phone.salePrice)}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={clsx(
-                      "rounded-full px-2.5 py-1 text-xs font-medium",
-                      phone.status === "IN_STOCK"
-                        ? "bg-green-500/15 text-green-400"
-                        : "bg-gray-500/15 text-gray-400"
-                    )}
-                  >
-                    {phone.status === "IN_STOCK" ? "Omborda" : "Sotilgan"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-500">
-                  {phone.addedBy.name}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {phone.status === "IN_STOCK" && (
-                    <button
-                      onClick={() => handleDelete(phone.id)}
-                      disabled={deletingId === phone.id}
-                      className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
-                    >
-                      {deletingId === phone.id ? "..." : "O'chirish"}
-                    </button>
+                </div>
+                <span
+                  className={clsx(
+                    "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium",
+                    phone.status === "IN_STOCK"
+                      ? "bg-green-500/15 text-green-400"
+                      : "bg-gray-500/15 text-gray-400"
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                >
+                  {phone.status === "IN_STOCK" ? "Omborda" : "Sotilgan"}
+                </span>
+              </div>
+
+              <div className="text-sm text-gray-300">
+                {phone.color}, {phone.storageGB}GB ·{" "}
+                {conditionLabels[phone.condition] ?? phone.condition}
+              </div>
+
+              <div className="font-mono text-xs text-gray-500">{phone.imei}</div>
+
+              <div className="flex items-baseline justify-between border-t border-white/10 pt-2">
+                <div className="text-xs text-gray-500">
+                  Tan narxi: {formatSum(phone.costPrice)}
+                </div>
+                <div className="font-semibold text-white">
+                  {formatSum(phone.salePrice)}
+                </div>
+              </div>
+
+              <div className="text-xs text-gray-500">Qo&apos;shgan: {phone.addedBy.name}</div>
+
+              {phone.status === "IN_STOCK" && (
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <div>
+                    {isOwner && (
+                      <TransferPhoneButton
+                        phoneId={phone.id}
+                        currentBranchId={phone.branchId}
+                        branches={branches}
+                      />
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleDelete(phone.id)}
+                    disabled={deletingId === phone.id}
+                    className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                  >
+                    {deletingId === phone.id ? "..." : "O'chirish"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

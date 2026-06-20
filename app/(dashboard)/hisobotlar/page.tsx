@@ -1,11 +1,20 @@
 import { requireUser } from "@/lib/session";
 import { listBranches } from "@/lib/branches";
-import { getTopModels, compareBranches, getProfitReport } from "@/lib/reports";
+import {
+  getTopModels,
+  compareBranches,
+  getProfitReport,
+  getDailyRevenueSeries,
+  getSellerPerformance,
+} from "@/lib/reports";
 import { resolveBranchId } from "@/lib/access-control";
 import { redirect } from "next/navigation";
 import { TopModelsTable } from "@/components/TopModelsTable";
 import { BranchComparisonTable } from "@/components/BranchComparisonTable";
 import { ProfitReportTable } from "@/components/ProfitReportTable";
+import { SellerPerformanceTable } from "@/components/SellerPerformanceTable";
+import { RevenueChart } from "@/components/RevenueChart";
+import { ExportExcelButton } from "@/components/ExportExcelButton";
 import type { Branch } from "@prisma/client";
 
 interface HisobotlarPageProps {
@@ -37,21 +46,41 @@ export default async function HisobotlarPage({
     );
   }
 
-  const [topModels, branchComparison, profitReport] = await Promise.all([
-    getTopModels(user, branchId),
-    compareBranches(user),
-    getProfitReport(user, branchId),
-  ]);
+  const [topModels, branchComparison, profitReport, revenueSeries, sellerPerformance] =
+    await Promise.all([
+      getTopModels(user, branchId),
+      compareBranches(user),
+      getProfitReport(user, branchId),
+      getDailyRevenueSeries(user, branchId, 30),
+      getSellerPerformance(user, branchId),
+    ]);
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold text-white">Hisobotlar</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold text-white">Hisobotlar</h1>
+        <ExportExcelButton branchId={branchId} />
+      </div>
+
+      <section>
+        <h2 className="mb-3 text-lg font-medium text-white">
+          Tushum va foyda — oxirgi 30 kun
+        </h2>
+        <RevenueChart data={revenueSeries} />
+      </section>
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-white">
           Filiallar taqqoslash (shu oy)
         </h2>
         <BranchComparisonTable rows={branchComparison} />
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-lg font-medium text-white">
+          Xodimlar bo&apos;yicha hisobot (shu oy)
+        </h2>
+        <SellerPerformanceTable rows={sellerPerformance} />
       </section>
 
       <section>

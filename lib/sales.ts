@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { assertBranchAccess, type SessionUser } from "@/lib/access-control";
 import type { PaymentType, PaymentPlan, Prisma } from "@prisma/client";
+import { notifyCreditSale } from "@/lib/telegram-notify";
 
 export interface CreateSaleInput {
   phoneId: string;
@@ -43,6 +44,7 @@ export async function createSale(user: SessionUser, input: CreateSaleInput) {
   // condition oldini olish uchun.)
   const phone = await prisma.phone.findUnique({ where: { id: input.phoneId } });
   if (!phone) throw new Error("Telefon topilmadi");
+  if (phone.deletedAt) throw new Error("Bu telefon o'chirilgan");
   if (phone.branchId !== input.branchId) {
     throw new Error("Telefon boshqa filialga tegishli");
   }
@@ -75,6 +77,14 @@ export async function createSale(user: SessionUser, input: CreateSaleInput) {
         paymentType: input.paymentType,
       },
     });
+
+    // Telegram bildirishnomasi uchun kerakli ko'rsatma ma'lumotlar
+    // (branch/seller nomi) — transaction ICHIDA, chunki shu yerda
+    // freshPhone allaqachon yuklangan, qo'shimcha so'rov arzon.
+    const [branchInfo, sellerInfo] = await Promise.all([
+      tx.branch.findUnique({ where: { id: input.branchId }, select: { name: true } }),
+      tx.user.findUnique({ where: { id: user.id }, select: { name: true } }),
+    ]);
 
     // 4. Agar kredit bo'lsa — mijoz yozuvi (PRD 3.6: "faqat kreditga sotuv bo'lganda yaratiladi")
     let customer = null;
@@ -111,15 +121,59 @@ export async function createSale(user: SessionUser, input: CreateSaleInput) {
       },
     });
 
-    return { sale, customer };
+    return {
+      sale,
+      customer,
+      notifyInfo: {
+        branchName: branchInfo?.name ?? "Noma'lum filial",
+        sellerName: sellerInfo?.name ?? "Noma'lum sotuvchi",
+        phoneModel: `${phone.brand} ${phone.model}`,
+      },
+    };
   });
 
-  return result;
+  // Telegram bildirishnomasi tranzaksiya TASHQARISIDA yuboriladi — tashqi
+  // tarmoq so'rovi (Telegram API) hech qachon baza tranzaksiyasini
+  // ushlab turmasligi kerak. Xatolik bo'lsa, sotuv baribir muvaffaqiyatli
+  // yakunlangan bo'ladi (notifyCreditSale ichida ham himoyalangan).
+  if (result.customer) {
+    void notifyCreditSale({
+      customerName: result.customer.fullName,
+      customerPhone: result.customer.phoneNumber,
+      phoneModel: result.notifyInfo.phoneModel,
+      totalAmount: Number(result.customer.totalAmount),
+      initialPayment: Number(result.customer.paidAmount),
+      dueDate: result.customer.dueDate,
+      branchName: result.notifyInfo.branchName,
+      sellerName: result.notifyInfo.sellerName,
+    }).catch((error: unknown) =>
+      console.error("[sales] Kredit sotuv bildirishnomasi xatosi:", error)
+    );
+  }
+
+  return { sale: result.sale, customer: result.customer };
 }
 
 /**
- * Filial bo'yicha sotuvlar tarixi (eng so'nggilari birinchi).
+ * Bitta sotuvni chek (PDF) yaratish uchun to'liq ma'lumotlar bilan
+ * qaytaradi. lib/receipt-pdf.ts shu funksiyaning natijasini ishlatadi.
  */
+export async function getSaleForReceipt(user: SessionUser, saleId: string) {
+  const sale = await prisma.sale.findUnique({
+    where: { id: saleId },
+    include: {
+      phone: { select: { model: true, brand: true, imei: true, color: true, storageGB: true } },
+      seller: { select: { name: true } },
+      branch: { select: { name: true, address: true, phoneNumber: true } },
+      customer: true,
+    },
+  });
+  if (!sale) throw new Error("Sotuv topilmadi");
+
+  assertBranchAccess(user, sale.branchId);
+
+  return sale;
+}
 export async function listSales(user: SessionUser, branchId: string) {
   assertBranchAccess(user, branchId);
 

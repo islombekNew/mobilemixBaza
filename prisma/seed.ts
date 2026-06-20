@@ -71,13 +71,16 @@ async function main() {
       },
     });
 
-    const sellerPasswordHash = await bcrypt.hash("seller123", 10);
+    const SELLER_LOGIN = process.env.SEED_SELLER_LOGIN ?? "seller1";
+    const SELLER_PASSWORD = process.env.SEED_SELLER_PASSWORD ?? "seller123";
+
+    const sellerPasswordHash = await bcrypt.hash(SELLER_PASSWORD, 10);
     const seller = await prisma.user.upsert({
-      where: { login: "seller1" },
-      update: {},
+      where: { login: SELLER_LOGIN },
+      update: { passwordHash: sellerPasswordHash, branchId: branch1.id },
       create: {
         name: "Dilshod Yusupov",
-        login: "seller1",
+        login: SELLER_LOGIN,
         passwordHash: sellerPasswordHash,
         role: "SELLER",
         branchId: branch1.id,
@@ -102,7 +105,88 @@ async function main() {
       },
     });
 
-    console.log(`   Demo sotuvchi: login="seller1", parol="seller123"`);
+    console.log(`   Demo sotuvchi: login="${SELLER_LOGIN}", parol="${SELLER_PASSWORD}"`);
+  }
+
+  // --------------------------------------------------------------------
+  // ASOSIY FILIALLAR: Namangan va Toshkent.
+  // Demo flagiga bog'liq emas — bular haqiqiy, doimiy filiallar.
+  // Har filial uchun ALOHIDA sotuvchi yaratiladi (branchId orqali bog'lanadi),
+  // shu sababli har bir sotuvchi login/parol bilan kirganda faqat o'z
+  // filialining ma'lumotlarini ko'radi (lib/access-control.ts: assertBranchAccess).
+  // Skript qayta ishga tushirilsa ham xavfsiz (upsert) — duplikat yaratmaydi,
+  // faqat parolni env'dagi qiymatga moslab yangilaydi.
+  // --------------------------------------------------------------------
+  console.log("");
+  console.log("🌱 Asosiy filiallar tayyorlanmoqda: Namangan, Toshkent...");
+
+  interface BranchSeed {
+    id: string;
+    name: string;
+    address: string;
+    phoneNumber: string;
+    sellerLoginEnv: string;
+    sellerPasswordEnv: string;
+    sellerName: string;
+  }
+
+  const REAL_BRANCHES: BranchSeed[] = [
+    {
+      id: "branch-namangan",
+      name: "Mix Mobile — Namangan",
+      address: process.env.NAMANGAN_ADDRESS ?? "Namangan shahri",
+      phoneNumber: process.env.NAMANGAN_PHONE ?? "+998900000001",
+      sellerLoginEnv: "NAMANGAN_SELLER_LOGIN",
+      sellerPasswordEnv: "NAMANGAN_SELLER_PASSWORD",
+      sellerName: process.env.NAMANGAN_SELLER_NAME ?? "Namangan sotuvchisi",
+    },
+    {
+      id: "branch-toshkent",
+      name: "Mix Mobile — Toshkent",
+      address: process.env.TOSHKENT_ADDRESS ?? "Toshkent shahri",
+      phoneNumber: process.env.TOSHKENT_PHONE ?? "+998900000002",
+      sellerLoginEnv: "TOSHKENT_SELLER_LOGIN",
+      sellerPasswordEnv: "TOSHKENT_SELLER_PASSWORD",
+      sellerName: process.env.TOSHKENT_SELLER_NAME ?? "Toshkent sotuvchisi",
+    },
+  ];
+
+  for (const def of REAL_BRANCHES) {
+    const branch = await prisma.branch.upsert({
+      where: { id: def.id },
+      update: { name: def.name, address: def.address, phoneNumber: def.phoneNumber },
+      create: {
+        id: def.id,
+        name: def.name,
+        address: def.address,
+        phoneNumber: def.phoneNumber,
+      },
+    });
+
+    const login = process.env[def.sellerLoginEnv];
+    const password = process.env[def.sellerPasswordEnv];
+
+    if (!login || !password) {
+      console.log(
+        `   ⚠️  ${def.name}: ${def.sellerLoginEnv}/${def.sellerPasswordEnv} .env'da topilmadi — sotuvchi hisobi yaratilmadi.`
+      );
+      continue;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    await prisma.user.upsert({
+      where: { login },
+      update: { passwordHash, name: def.sellerName, role: "SELLER", branchId: branch.id },
+      create: {
+        name: def.sellerName,
+        login,
+        passwordHash,
+        role: "SELLER",
+        branchId: branch.id,
+      },
+    });
+
+    console.log(`   ✅ ${def.name}: sotuvchi login="${login}" tayyor (parol .env'dagidek)`);
   }
 }
 

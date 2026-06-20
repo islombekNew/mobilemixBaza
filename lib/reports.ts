@@ -178,7 +178,142 @@ export async function compareBranches(user: SessionUser) {
   return results;
 }
 
-/** PRD 3.7: "Foyda hisobi (sotuv narxi − tan narxi, har bir sotuv va umumiy)" */
+/**
+ * Barcha filiallar bo'yicha BUGUNGI qisqa hisobot (Telegram bot /bugun
+ * buyrug'i va kunlik cron hisobot uchun). Faqat owner uchun — Telegram
+ * bot doim "system owner" sifatida ishlaydi (app/api/telegram/webhook).
+ */
+export async function getDailySummaryAllBranches(user: SessionUser) {
+  assertOwner(user);
+
+  const dayStart = startOfDay();
+  const branches = await prisma.branch.findMany({ orderBy: { createdAt: "asc" } });
+
+  type DailyBranchRow = (typeof branches)[number];
+
+  const stats = await Promise.all(
+    branches.map(async (branch: DailyBranchRow) => {
+      const [inStockCount, salesToday] = await Promise.all([
+        prisma.phone.count({ where: { branchId: branch.id, status: "IN_STOCK" } }),
+        prisma.sale.findMany({
+          where: { branchId: branch.id, saleDate: { gte: dayStart } },
+          select: { finalPrice: true, phone: { select: { costPrice: true } } },
+        }),
+      ]);
+
+      type DailySaleRow = (typeof salesToday)[number];
+
+      const revenueTotal = salesToday.reduce(
+        (sum: number, s: DailySaleRow) => sum + Number(s.finalPrice),
+        0
+      );
+      const profitTotal = salesToday.reduce(
+        (sum: number, s: DailySaleRow) =>
+          sum + (Number(s.finalPrice) - Number(s.phone.costPrice)),
+        0
+      );
+
+      return {
+        branchName: branch.name,
+        inStockCount,
+        soldCount: salesToday.length,
+        revenueTotal,
+        profitTotal,
+      };
+    })
+  );
+
+  return stats;
+}
+/**
+ * Oxirgi N kunlik tushum/foyda qatori — kunlik grafik uchun
+ * (hisobotlar sahifasidagi chart). Sotuv bo'lmagan kunlar 0 bilan to'ladi,
+ * shu sababli grafikda uzilish bo'lmaydi.
+ */
+export async function getDailyRevenueSeries(
+  user: SessionUser,
+  branchId: string,
+  days = 30
+) {
+  assertBranchAccess(user, branchId);
+
+  const rangeStart = startOfDay(new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000));
+
+  const sales = await prisma.sale.findMany({
+    where: { branchId, saleDate: { gte: rangeStart } },
+    select: {
+      finalPrice: true,
+      saleDate: true,
+      phone: { select: { costPrice: true } },
+    },
+  });
+
+  const byDay = new Map<string, { revenue: number; profit: number }>();
+  for (const sale of sales) {
+    const key = startOfDay(sale.saleDate).toISOString().slice(0, 10);
+    const entry = byDay.get(key) ?? { revenue: 0, profit: 0 };
+    entry.revenue += Number(sale.finalPrice);
+    entry.profit += Number(sale.finalPrice) - Number(sale.phone.costPrice);
+    byDay.set(key, entry);
+  }
+
+  const series: { date: string; revenue: number; profit: number }[] = [];
+  for (let i = 0; i < days; i++) {
+    const day = startOfDay(new Date(rangeStart.getTime() + i * 24 * 60 * 60 * 1000));
+    const key = day.toISOString().slice(0, 10);
+    const entry = byDay.get(key) ?? { revenue: 0, profit: 0 };
+    series.push({ date: key, revenue: entry.revenue, profit: entry.profit });
+  }
+
+  return series;
+}
+
+/**
+ * Xodimlar (sotuvchilar) bo'yicha hisobot — har bir sotuvchi shu oyda
+ * nechta telefon sotgani, qancha tushum va foyda keltirgani.
+ */
+export async function getSellerPerformance(user: SessionUser, branchId: string) {
+  assertBranchAccess(user, branchId);
+
+  const monthStart = startOfMonth();
+
+  const sales = await prisma.sale.findMany({
+    where: { branchId, saleDate: { gte: monthStart } },
+    select: {
+      finalPrice: true,
+      seller: { select: { id: true, name: true } },
+      phone: { select: { costPrice: true } },
+    },
+  });
+
+  const grouped = new Map<
+    string,
+    { sellerId: string; sellerName: string; count: number; revenue: number; profit: number }
+  >();
+
+  for (const sale of sales) {
+    const existing = grouped.get(sale.seller.id);
+    const revenue = Number(sale.finalPrice);
+    const profit = Number(sale.finalPrice) - Number(sale.phone.costPrice);
+
+    if (existing) {
+      existing.count += 1;
+      existing.revenue += revenue;
+      existing.profit += profit;
+    } else {
+      grouped.set(sale.seller.id, {
+        sellerId: sale.seller.id,
+        sellerName: sale.seller.name,
+        count: 1,
+        revenue,
+        profit,
+      });
+    }
+  }
+
+  return Array.from(grouped.values()).sort((a, b) => b.revenue - a.revenue);
+}
+
 export async function getProfitReport(user: SessionUser, branchId: string) {
   assertBranchAccess(user, branchId);
 

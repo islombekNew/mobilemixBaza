@@ -115,3 +115,30 @@ export const userCreateSchema = z
       });
     }
   });
+
+export const phoneTransferSchema = z.object({
+  targetBranchId: z.string().min(1, "Maqsad filial tanlanishi shart"),
+});
+
+/**
+ * Excel/CSV orqali ulgurji import qilinadigan har bir qator uchun
+ * validatsiya. `phoneCreateSchema`dan farqi — `branchId` bu yerda yo'q
+ * (butun fayl bitta filial uchun yuklanadi, route'da qo'shiladi) va
+ * IMEI noyobligini DB darajasida tekshiramiz (bu yerda faqat format).
+ */
+export const phoneImportRowSchema = z.object({
+  model: z.string().trim().min(1, "Model kiritilishi shart"),
+  brand: z.string().trim().min(1, "Brend kiritilishi shart"),
+  color: z.string().trim().min(1, "Rang kiritilishi shart"),
+  storageGB: z.coerce.number().int().positive("Xotira hajmi musbat son bo'lishi kerak"),
+  imei: imeiSchema,
+  condition: z
+    .string()
+    .trim()
+    .transform((v) => v.toUpperCase())
+    .pipe(z.enum(["NEW", "USED", "REFURBISHED"])),
+  costPrice: nonNegativeNumber,
+  salePrice: positiveNumber,
+});
+
+export type PhoneImportRow = z.infer<typeof phoneImportRowSchema>;

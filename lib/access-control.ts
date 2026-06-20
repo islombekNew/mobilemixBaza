@@ -1,4 +1,5 @@
 import type { Role } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
 /**
  * PRD 4.3: "Har bir API so'rovida foydalanuvchi roli va filialga
@@ -65,4 +66,27 @@ export function resolveBranchId(
   }
   // SELLER: so'rovdagi branchId e'tiborga olinmaydi, faqat o'z filiali.
   return user.branchId ?? null;
+}
+
+/**
+ * Telegram bot (webhook) va cron job'lar haqiqiy login qilingan foydalanuvchi
+ * sifatida emas, balki "tizim" sifatida ishlaydi — lekin baribir bazadagi
+ * HAQIQIY bir OWNER hisobi orqali (audit log'larda foreign key buzilmasligi
+ * uchun). Shu sababli har doim DB'dan birinchi OWNER topiladi.
+ *
+ * Bu funksiya faqat ICHKI (server-side) avtomatlashtirish uchun — hech
+ * qachon foydalanuvchi so'rovi orqali (masalan, biror API route'da
+ * to'g'ridan-to'g'ri) chaqirilmaydi.
+ */
+export async function getSystemOwnerUser(): Promise<SessionUser> {
+  const owner = await prisma.user.findFirst({
+    where: { role: "OWNER" },
+    select: { id: true },
+  });
+
+  if (!owner) {
+    throw new Error("Tizimda hech qanday OWNER hisobi topilmadi");
+  }
+
+  return { id: owner.id, role: "OWNER", branchId: null };
 }

@@ -57,6 +57,8 @@ enum AuditAction {
   PHONE_CREATED
   PHONE_UPDATED
   PHONE_DELETED
+  PHONE_TRANSFERRED
+  PHONE_IMPORTED
   SALE_CREATED
   DEBT_PAYMENT_CREATED
   BRANCH_CREATED
@@ -110,11 +112,13 @@ model Phone {
   brand       String
   color       String
   storageGB   Int
-  imei        String         @unique
+  imei        String
   condition   PhoneCondition
   costPrice   Decimal        @db.Decimal(12, 2)
   salePrice   Decimal        @db.Decimal(12, 2)
   status      PhoneStatus    @default(IN_STOCK)
+  photoUrl    String?
+  deletedAt   DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -129,6 +133,8 @@ model Phone {
   @@index([branchId])
   @@index([status])
   @@index([model, brand])
+  @@index([imei])
+  @@index([deletedAt])
   @@map("phones")
 }
 
