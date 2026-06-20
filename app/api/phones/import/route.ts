@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
         };
         formatErrors.push({
           row: index + 2,
-          reason: `${fieldNames[field] ?? field || "Maydon"}: ${issue?.message ?? "Noto'g'ri format"}`,
+          reason: `${(fieldNames[field] ?? field) || "Maydon"}: ${issue?.message ?? "Noto'g'ri format"}`,
         });
       }
     });
