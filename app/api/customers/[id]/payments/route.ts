@@ -15,7 +15,7 @@ export async function POST(
     const body = await request.json();
     const input = debtPaymentCreateSchema.parse(body);
 
-    const result = await addDebtPayment(user, id, input.amount, input.note);
+    const result = await addDebtPayment(user, id, input.amount, input.note, input.paymentType);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     return handleApiError(error);

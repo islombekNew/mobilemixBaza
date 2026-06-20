@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { formatDate, formatSum } from "@/lib/format";
 
 interface SaleRow {
   id: string;
@@ -20,18 +21,13 @@ const paymentTypeLabels: Record<string, string> = {
   CREDIT: "Kredit",
 };
 
-function formatSum(value: string | number) {
-  return Number(value).toLocaleString("uz-UZ") + " so'm";
-}
-
-function formatDate(value: string | Date) {
-  return new Date(value).toLocaleDateString("uz-UZ", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function formatDateTime(value: string | Date) {
+  const d = new Date(value);
+  const day = d.getDate().toString().padStart(2, "0");
+  const month = (d.getMonth() + 1).toString().padStart(2, "0");
+  const hour = d.getHours().toString().padStart(2, "0");
+  const min = d.getMinutes().toString().padStart(2, "0");
+  return `${day}.${month}.${d.getFullYear()} ${hour}:${min}`;
 }
 
 export function SalesHistory({ sales }: SalesHistoryProps) {
@@ -72,7 +68,7 @@ export function SalesHistory({ sales }: SalesHistoryProps) {
                 </div>
               </td>
               <td className="px-4 py-3 font-medium text-white">
-                {formatSum(sale.finalPrice)}
+                {formatSum(Number(sale.finalPrice))}
               </td>
               <td className="px-4 py-3">
                 <span
@@ -91,7 +87,7 @@ export function SalesHistory({ sales }: SalesHistoryProps) {
               </td>
               <td className="px-4 py-3 text-gray-400">{sale.seller.name}</td>
               <td className="px-4 py-3 text-xs text-gray-500">
-                {formatDate(sale.saleDate)}
+                {formatDateTime(sale.saleDate)}
               </td>
               <td className="px-4 py-3">
                 <a

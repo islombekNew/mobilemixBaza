@@ -1,3 +1,6 @@
+import type { DashboardPeriod } from "@/lib/reports";
+import { formatSum as libFormatSum, formatDate } from "@/lib/format";
+
 interface DashboardStatsProps {
   stats: {
     inStockCount: number;
@@ -11,37 +14,43 @@ interface DashboardStatsProps {
     bestDay: string | null;
     bestDayRevenue: number;
   };
+  period?: DashboardPeriod;
 }
 
 function formatSum(value: number) {
-  return value.toLocaleString("uz-UZ") + " so'm";
+  return libFormatSum(value);
 }
 
 function formatDay(value: string | null) {
   if (!value) return "—";
-  return new Date(value).toLocaleDateString("uz-UZ", {
-    day: "numeric",
-    month: "long",
-  });
+  return formatDate(value);
 }
 
-export function DashboardStats({ stats }: DashboardStatsProps) {
+const periodLabel: Record<DashboardPeriod, string> = {
+  today: "Bugun",
+  yesterday: "Kecha",
+  week: "Hafta",
+  month: "Oy",
+};
+
+export function DashboardStats({ stats, period = "month" }: DashboardStatsProps) {
+  const p = periodLabel[period];
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Omborda qolgan" value={String(stats.inStockCount)} />
         <StatCard
-          label="Shu oy kirgan"
+          label={`${p} kirgan`}
           value={String(stats.incomingCount)}
           sub={formatSum(stats.incomingCostTotal)}
         />
         <StatCard
-          label="Shu oy sotilgan"
+          label={`${p} sotilgan`}
           value={String(stats.soldCount)}
           sub={formatSum(stats.soldRevenueTotal)}
         />
         <StatCard
-          label="Shu oy foyda"
+          label={`${p} foyda`}
           value={formatSum(stats.monthProfit)}
           accent
         />

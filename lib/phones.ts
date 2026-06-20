@@ -170,7 +170,7 @@ export async function updatePhone(
       action: "PHONE_UPDATED",
       userId: user.id,
       branchId: phone.branchId,
-      details: { phoneId, changes: input },
+      details: { phoneId, changes: JSON.parse(JSON.stringify(input)) },
     },
   });
 

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { formatNumber, parseFormattedNumber } from "@/lib/format";
 
 interface AddPhoneButtonProps {
   branchId: string;
@@ -47,9 +48,14 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  function handleNumberInput(field: "costPrice" | "salePrice", raw: string) {
+    const digits = raw.replace(/\./g, "").replace(/\D/g, "");
+    update(field, digits ? formatNumber(Number(digits)) : "");
+  }
+
   const profit = useMemo(() => {
-    const cost = Number(form.costPrice);
-    const sale = Number(form.salePrice);
+    const cost = Number(parseFormattedNumber(form.costPrice));
+    const sale = Number(parseFormattedNumber(form.salePrice));
     if (!cost || !sale) return null;
     return sale - cost;
   }, [form.costPrice, form.salePrice]);
@@ -65,6 +71,8 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
       const body = {
         ...form,
         branchId,
+        costPrice: Number(parseFormattedNumber(form.costPrice)) || undefined,
+        salePrice: Number(parseFormattedNumber(form.salePrice)),
         ramGB: form.ramGB ? Number(form.ramGB) : null,
         batteryHealth: form.batteryHealth ? Number(form.batteryHealth) : null,
         warrantyMonths: Number(form.warrantyMonths),
@@ -174,14 +182,33 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
 
               {/* Tan narxi va Sotuv narxi */}
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Tan narxi" value={form.costPrice} onChange={(v) => update("costPrice", v)} type="number" min={0} required />
-                <Field label="Sotuv narxi" value={form.salePrice} onChange={(v) => update("salePrice", v)} type="number" min={0} required />
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-300">Tan narxi</label>
+                  <input
+                    type="text"
+                    value={form.costPrice}
+                    onChange={(e) => handleNumberInput("costPrice", e.target.value)}
+                    placeholder="0"
+                    className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-300">Sotuv narxi</label>
+                  <input
+                    type="text"
+                    value={form.salePrice}
+                    onChange={(e) => handleNumberInput("salePrice", e.target.value)}
+                    placeholder="0"
+                    required
+                    className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
+                  />
+                </div>
               </div>
 
               {/* Avtomatik foyda hisoblash */}
               {profit !== null && (
                 <div className={`rounded-lg px-3 py-2 text-sm ${profit >= 0 ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-                  Foyda: <span className="font-semibold">{profit.toLocaleString("uz-UZ")} so&apos;m</span>
+                  Foyda: <span className="font-semibold">{formatNumber(profit)} so&apos;m</span>
                 </div>
               )}
 

@@ -102,6 +102,7 @@ export const saleCreateSchema = z
 
 export const debtPaymentCreateSchema = z.object({
   amount: positiveNumber,
+  paymentType: z.enum(["CASH", "CARD"]).default("CASH"),
   note: z.string().trim().max(500).optional(),
 });
 

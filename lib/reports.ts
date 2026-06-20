@@ -9,15 +9,42 @@ function startOfDay(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+export type DashboardPeriod = "today" | "yesterday" | "week" | "month";
+
+function getPeriodStart(period: DashboardPeriod): Date {
+  const now = new Date();
+  switch (period) {
+    case "today":
+      return startOfDay(now);
+    case "yesterday": {
+      const d = startOfDay(now);
+      d.setDate(d.getDate() - 1);
+      return d;
+    }
+    case "week": {
+      const d = startOfDay(now);
+      d.setDate(d.getDate() - 6);
+      return d;
+    }
+    case "month":
+    default:
+      return startOfMonth(now);
+  }
+}
+
 /**
  * PRD 3.4: Filial bosh sahifasi (dashboard).
  * "Omborda qolgan mahsulotlar", "Shu oy kirgan/chiqgan mahsulotlar",
  * "Shu oy foyda", "eng ko'p sotilgan model, eng yuqori sotuv kuni"
  */
-export async function getBranchDashboard(user: SessionUser, branchId: string) {
+export async function getBranchDashboard(
+  user: SessionUser,
+  branchId: string,
+  period: DashboardPeriod = "month"
+) {
   assertBranchAccess(user, branchId);
 
-  const monthStart = startOfMonth();
+  const monthStart = getPeriodStart(period);
 
   const [inStockCount, inAddedThisMonth, salesThisMonth] = await Promise.all([
     prisma.phone.count({ where: { branchId, status: "IN_STOCK" } }),

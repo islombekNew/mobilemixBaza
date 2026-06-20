@@ -69,7 +69,8 @@ export async function addDebtPayment(
   user: SessionUser,
   customerId: string,
   amount: number,
-  note?: string
+  note?: string,
+  paymentType: "CASH" | "CARD" = "CASH"
 ) {
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new Error("To'lov summasi musbat son bo'lishi kerak");
@@ -95,7 +96,7 @@ export async function addDebtPayment(
 
   const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const payment = await tx.debtPayment.create({
-      data: { customerId, amount, note },
+      data: { customerId, amount, note, paymentType },
     });
 
     const updatedCustomer = await tx.customer.update({

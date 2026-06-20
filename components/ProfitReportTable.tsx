@@ -1,3 +1,5 @@
+import { formatDate, formatSum } from "@/lib/format";
+
 interface ProfitRow {
   id: string;
   model: string;
@@ -9,14 +11,6 @@ interface ProfitRow {
 
 interface ProfitReportTableProps {
   rows: ProfitRow[];
-}
-
-function formatDate(value: string | Date) {
-  return new Date(value).toLocaleDateString("uz-UZ", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export function ProfitReportTable({ rows }: ProfitReportTableProps) {
@@ -50,16 +44,10 @@ export function ProfitReportTable({ rows }: ProfitReportTableProps) {
               <td className="px-4 py-3 text-xs text-gray-500">
                 {formatDate(row.saleDate)}
               </td>
-              <td className="px-4 py-3">{row.costPrice.toLocaleString("uz-UZ")}</td>
-              <td className="px-4 py-3">{row.salePrice.toLocaleString("uz-UZ")}</td>
-              <td
-                className={
-                  row.profit >= 0
-                    ? "px-4 py-3 font-medium text-green-400"
-                    : "px-4 py-3 font-medium text-red-400"
-                }
-              >
-                {row.profit.toLocaleString("uz-UZ")} so&apos;m
+              <td className="px-4 py-3">{formatSum(row.costPrice)}</td>
+              <td className="px-4 py-3">{formatSum(row.salePrice)}</td>
+              <td className={row.profit >= 0 ? "px-4 py-3 font-medium text-green-400" : "px-4 py-3 font-medium text-red-400"}>
+                {formatSum(row.profit)}
               </td>
             </tr>
           ))}

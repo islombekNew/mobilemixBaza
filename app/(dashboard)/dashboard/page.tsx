@@ -1,13 +1,14 @@
 import { requireUser } from "@/lib/session";
 import { listBranches } from "@/lib/branches";
-import { getBranchDashboard } from "@/lib/reports";
+import { getBranchDashboard, type DashboardPeriod } from "@/lib/reports";
 import { resolveBranchId } from "@/lib/access-control";
 import { DashboardStats } from "@/components/DashboardStats";
+import { DashboardPeriodFilter } from "@/components/DashboardPeriodFilter";
 
 import type { Branch } from "@prisma/client";
 
 interface DashboardHomePageProps {
-  searchParams: Promise<{ branchId?: string }>;
+  searchParams: Promise<{ branchId?: string; period?: string }>;
 }
 
 export default async function DashboardHomePage({
@@ -32,15 +33,24 @@ export default async function DashboardHomePage({
     );
   }
 
-  const stats = await getBranchDashboard(user, branchId);
+  const validPeriods: DashboardPeriod[] = ["today", "yesterday", "week", "month"];
+  const period: DashboardPeriod = validPeriods.includes(params.period as DashboardPeriod)
+    ? (params.period as DashboardPeriod)
+    : "month";
+
+  const stats = await getBranchDashboard(user, branchId, period);
   const branchName = branches.find((b: Branch) => b.id === branchId)?.name ?? "";
 
   return (
     <div>
       <h1 className="text-2xl font-semibold text-white">Bosh sahifa</h1>
-      <p className="mt-1 mb-6 text-sm text-gray-500">{branchName}</p>
+      <p className="mt-1 text-sm text-gray-500">{branchName}</p>
 
-      <DashboardStats stats={stats} />
+      <div className="mt-4 mb-6">
+        <DashboardPeriodFilter current={period} />
+      </div>
+
+      <DashboardStats stats={stats} period={period} />
     </div>
   );
 }

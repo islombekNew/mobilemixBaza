@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/session";
 import { listBranches } from "@/lib/branches";
 import { redirect } from "next/navigation";
 import { AddBranchButton } from "@/components/AddBranchButton";
+import { EditBranchButton } from "@/components/EditBranchButton";
 import type { Branch } from "@prisma/client";
 
 export default async function FiliallarPage() {
@@ -22,13 +23,15 @@ export default async function FiliallarPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {branches.map((branch) => (
-          <div
-            key={branch.id}
-            className="rounded-xl border border-white/10 bg-white/5 p-4"
-          >
-            <h3 className="font-medium text-white">{branch.name}</h3>
-            <p className="mt-1 text-sm text-gray-400">{branch.address}</p>
-            <p className="mt-1 text-sm text-gray-500">{branch.phoneNumber}</p>
+          <div key={branch.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="font-medium text-white">{branch.name}</h3>
+                <p className="mt-1 text-sm text-gray-400">{branch.address}</p>
+                <p className="mt-1 text-sm text-gray-500">{branch.phoneNumber}</p>
+              </div>
+              <EditBranchButton branch={branch} />
+            </div>
           </div>
         ))}
       </div>

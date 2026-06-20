@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { PhonePhotoUploader } from "@/components/PhonePhotoUploader";
 import { TransferPhoneButton } from "@/components/TransferPhoneButton";
+import { EditPhoneModal } from "@/components/EditPhoneModal";
+
+const PAGE_SIZE = 20;
 
 interface PhoneRow {
   id: string;
@@ -61,7 +64,12 @@ function formatSum(value: string | number | null) {
 export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTableProps) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editPhone, setEditPhone] = useState<PhoneRow | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.ceil(phones.length / PAGE_SIZE);
+  const paged = phones.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   async function handleDelete(id: string) {
     if (!confirm("Bu telefonni o'chirishni tasdiqlaysizmi?")) return;
@@ -92,6 +100,10 @@ export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTabl
 
   return (
     <div>
+      {editPhone && (
+        <EditPhoneModal phone={editPhone} onClose={() => setEditPhone(null)} />
+      )}
+
       {error && (
         <p className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
           {error}
@@ -99,7 +111,7 @@ export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTabl
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {phones.map((phone) => (
+        {paged.map((phone) => (
           <div
             key={phone.id}
             className="overflow-hidden rounded-xl border border-white/10 bg-white/5"
@@ -163,17 +175,23 @@ export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTabl
 
               <div className="text-xs text-gray-500">Qo&apos;shgan: {phone.addedBy.name}</div>
 
-              {phone.status === "IN_STOCK" && (
-                <div className="flex items-center justify-between gap-2 pt-1">
-                  <div>
-                    {isOwner && (
-                      <TransferPhoneButton
-                        phoneId={phone.id}
-                        currentBranchId={phone.branchId}
-                        branches={branches}
-                      />
-                    )}
-                  </div>
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <div className="flex items-center gap-2">
+                  {isOwner && phone.status === "IN_STOCK" && (
+                    <TransferPhoneButton
+                      phoneId={phone.id}
+                      currentBranchId={phone.branchId}
+                      branches={branches}
+                    />
+                  )}
+                  <button
+                    onClick={() => setEditPhone(phone)}
+                    className="text-xs text-blue-400 hover:text-blue-300"
+                  >
+                    Tahrirlash
+                  </button>
+                </div>
+                {phone.status === "IN_STOCK" && (
                   <button
                     onClick={() => handleDelete(phone.id)}
                     disabled={deletingId === phone.id}
@@ -181,12 +199,35 @@ export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTabl
                   >
                     {deletingId === phone.id ? "..." : "O'chirish"}
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Sahifalash */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-40"
+          >
+            ← Oldingi
+          </button>
+          <span className="text-sm text-gray-400">
+            {page} / {totalPages} ({phones.length} ta)
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-40"
+          >
+            Keyingi →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

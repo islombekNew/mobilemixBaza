@@ -194,9 +194,10 @@ model Customer {
 }
 
 model DebtPayment {
-  id          String   @id @default(cuid())
-  amount      Decimal  @db.Decimal(12, 2)
-  paymentDate DateTime @default(now())
+  id          String      @id @default(cuid())
+  amount      Decimal     @db.Decimal(12, 2)
+  paymentType PaymentType @default(CASH)
+  paymentDate DateTime    @default(now())
   note        String?
 
   customerId String

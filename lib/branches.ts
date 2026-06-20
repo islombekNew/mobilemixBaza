@@ -19,6 +19,17 @@ export interface CreateBranchInput {
   phoneNumber: string;
 }
 
+export interface UpdateBranchInput {
+  name?: string;
+  address?: string;
+  phoneNumber?: string;
+}
+
+export async function updateBranch(user: SessionUser, branchId: string, input: UpdateBranchInput) {
+  assertOwner(user);
+  return prisma.branch.update({ where: { id: branchId }, data: input });
+}
+
 /** PRD 3.2: "Owner yangi filial qo'sha oladi" */
 export async function createBranch(user: SessionUser, input: CreateBranchInput) {
   assertOwner(user);

@@ -4,6 +4,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { useState } from "react";
 import clsx from "clsx";
 import { AddPaymentForm } from "@/components/AddPaymentForm";
+import { formatDate, formatSum } from "@/lib/format";
 
 interface Payment {
   id: string;
@@ -41,18 +42,6 @@ const paymentPlanLabels: Record<string, string> = {
   ONE_TIME: "Bir martalik",
   MONTHLY: "Oylik",
 };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function formatSum(value: any) {
-  return Number(value).toLocaleString("uz-UZ") + " so'm";
-}
-
-function formatDate(value: string | Date) {
-  return new Date(value).toLocaleDateString("uz-UZ", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 export function CustomerList({ customers }: CustomerListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -103,9 +92,9 @@ export function CustomerList({ customers }: CustomerListProps) {
               </div>
 
               <div className="text-right">
-                <p className="font-medium text-white">{formatSum(remaining)}</p>
+                <p className="font-medium text-white">{formatSum(Number(remaining))}</p>
                 <p className="text-xs text-gray-500">
-                 qolgan / {formatSum(customer.totalAmount)}
+                 qolgan / {formatSum(Number(customer.totalAmount))}
                 </p>
               </div>
             </button>
@@ -126,7 +115,7 @@ export function CustomerList({ customers }: CustomerListProps) {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">To&apos;langan</p>
-                    <p className="text-gray-200">{formatSum(customer.paidAmount)}</p>
+                    <p className="text-gray-200">{formatSum(Number(customer.paidAmount))}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">IMEI</p>
