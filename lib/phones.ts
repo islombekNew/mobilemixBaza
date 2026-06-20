@@ -72,6 +72,13 @@ export interface CreatePhoneInput {
   costPrice: number;
   salePrice: number;
   branchId: string;
+  ramGB?: number | null;
+  batteryHealth?: number | null;
+  hasBox?: boolean;
+  hasCharger?: boolean;
+  hasDocuments?: boolean;
+  warrantyMonths?: number;
+  supplier?: string | null;
 }
 
 /** PRD 3.3: "IMEI raqami: Har bir qurilma uchun unikal" + takror oldini olish */
@@ -102,6 +109,13 @@ export async function createPhone(user: SessionUser, input: CreatePhoneInput) {
       branchId: input.branchId,
       addedById: user.id,
       status: "IN_STOCK",
+      ramGB: input.ramGB ?? null,
+      batteryHealth: input.batteryHealth ?? null,
+      hasBox: input.hasBox ?? false,
+      hasCharger: input.hasCharger ?? false,
+      hasDocuments: input.hasDocuments ?? false,
+      warrantyMonths: input.warrantyMonths ?? 0,
+      supplier: input.supplier ?? null,
     },
   });
 
@@ -125,6 +139,13 @@ export interface UpdatePhoneInput {
   condition?: PhoneCondition;
   costPrice?: number;
   salePrice?: number;
+  ramGB?: number | null;
+  batteryHealth?: number | null;
+  hasBox?: boolean;
+  hasCharger?: boolean;
+  hasDocuments?: boolean;
+  warrantyMonths?: number;
+  supplier?: string | null;
 }
 
 /** PRD 3.3: "Mavjud telefonni tahrirlash — owner va seller ikkisi ham" */

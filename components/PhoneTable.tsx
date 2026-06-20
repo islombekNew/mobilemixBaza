@@ -12,6 +12,7 @@ interface PhoneRow {
   brand: string;
   color: string;
   storageGB: number;
+  ramGB?: number | null;
   imei: string;
   condition: string;
   costPrice: string | number | null;
@@ -20,6 +21,12 @@ interface PhoneRow {
   photoUrl: string | null;
   branchId: string;
   addedBy: { id: string; name: string };
+  batteryHealth?: number | null;
+  hasBox?: boolean;
+  hasCharger?: boolean;
+  hasDocuments?: boolean;
+  warrantyMonths?: number;
+  supplier?: string | null;
 }
 
 interface BranchOption {
@@ -118,8 +125,10 @@ export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTabl
               </div>
 
               <div className="text-sm text-gray-300">
-                {phone.color}, {phone.storageGB}GB ·{" "}
-                {conditionLabels[phone.condition] ?? phone.condition}
+                {phone.color},{" "}
+                {phone.ramGB ? `${phone.ramGB}/${phone.storageGB}GB` : `${phone.storageGB}GB`}
+                {" "}· {conditionLabels[phone.condition] ?? phone.condition}
+                {phone.batteryHealth ? ` · 🔋${phone.batteryHealth}%` : ""}
               </div>
 
               <div className="font-mono text-xs text-gray-500">{phone.imei}</div>
@@ -131,6 +140,25 @@ export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTabl
                 <div className="font-semibold text-white">
                   {formatSum(phone.salePrice)}
                 </div>
+              </div>
+
+              {/* Komplektatsiya */}
+              {(phone.hasBox || phone.hasCharger || phone.hasDocuments) && (
+                <div className="flex flex-wrap gap-1">
+                  {phone.hasBox && <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">📦 Karobka</span>}
+                  {phone.hasCharger && <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">🔌 Zaryadchik</span>}
+                  {phone.hasDocuments && <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">📄 Hujjat</span>}
+                </div>
+              )}
+
+              {/* Kafolat va Yetkazib beruvchi */}
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                {phone.warrantyMonths ? (
+                  <span>🛡 {phone.warrantyMonths >= 12 ? `${phone.warrantyMonths / 12} yil` : `${phone.warrantyMonths} oy`} kafolat</span>
+                ) : (
+                  <span>Kafolatsiz</span>
+                )}
+                {phone.supplier && <span>· {phone.supplier}</span>}
               </div>
 
               <div className="text-xs text-gray-500">Qo&apos;shgan: {phone.addedBy.name}</div>

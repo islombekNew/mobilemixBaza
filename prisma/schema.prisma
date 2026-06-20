@@ -112,15 +112,23 @@ model Phone {
   brand       String
   color       String
   storageGB   Int
-  imei        String
-  condition   PhoneCondition
-  costPrice   Decimal        @db.Decimal(12, 2)
-  salePrice   Decimal        @db.Decimal(12, 2)
-  status      PhoneStatus    @default(IN_STOCK)
-  photoUrl    String?
-  deletedAt   DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  imei           String
+  condition      PhoneCondition
+  costPrice      Decimal        @db.Decimal(12, 2)
+  salePrice      Decimal        @db.Decimal(12, 2)
+  status         PhoneStatus    @default(IN_STOCK)
+  photoUrl       String?
+  deletedAt      DateTime?
+  // Qo'shimcha maydonlar
+  ramGB          Int?
+  batteryHealth  Int?           // 0-100 foiz, faqat ishlatilgan/refurbished uchun
+  hasBox         Boolean        @default(false)
+  hasCharger     Boolean        @default(false)
+  hasDocuments   Boolean        @default(false)
+  warrantyMonths Int            @default(0) // 0=kafolatsiz, 1,3,6,12,24 oy
+  supplier       String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   branchId String
   branch   Branch @relation(fields: [branchId], references: [id])

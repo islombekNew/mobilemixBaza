@@ -23,6 +23,12 @@ const nonNegativeNumber = z.coerce
   .finite("Raqam kiritilishi kerak")
   .min(0, "Manfiy son bo'lishi mumkin emas");
 
+const warrantyMonthsSchema = z.coerce
+  .number()
+  .int()
+  .min(0, "Kafolat muddati manfiy bo'lishi mumkin emas")
+  .default(0);
+
 export const phoneCreateSchema = z.object({
   model: z.string().trim().min(1, "Model kiritilishi shart"),
   brand: z.string().trim().min(1, "Brend kiritilishi shart"),
@@ -33,6 +39,13 @@ export const phoneCreateSchema = z.object({
   costPrice: nonNegativeNumber,
   salePrice: positiveNumber,
   branchId: z.string().min(1),
+  ramGB: z.coerce.number().int().positive().optional().nullable(),
+  batteryHealth: z.coerce.number().int().min(1).max(100).optional().nullable(),
+  hasBox: z.coerce.boolean().default(false),
+  hasCharger: z.coerce.boolean().default(false),
+  hasDocuments: z.coerce.boolean().default(false),
+  warrantyMonths: warrantyMonthsSchema,
+  supplier: z.string().trim().max(200).optional().nullable(),
 });
 
 export const phoneUpdateSchema = z.object({
@@ -43,6 +56,13 @@ export const phoneUpdateSchema = z.object({
   condition: z.enum(["NEW", "USED", "REFURBISHED"]).optional(),
   costPrice: nonNegativeNumber.optional(),
   salePrice: positiveNumber.optional(),
+  ramGB: z.coerce.number().int().positive().optional().nullable(),
+  batteryHealth: z.coerce.number().int().min(1).max(100).optional().nullable(),
+  hasBox: z.coerce.boolean().optional(),
+  hasCharger: z.coerce.boolean().optional(),
+  hasDocuments: z.coerce.boolean().optional(),
+  warrantyMonths: warrantyMonthsSchema.optional(),
+  supplier: z.string().trim().max(200).optional().nullable(),
 });
 
 export const saleCustomerSchema = z.object({
