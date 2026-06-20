@@ -131,9 +131,17 @@ export async function POST(request: NextRequest) {
       if (parsed.success) {
         validRows.push(parsed.data);
       } else {
+        const issue = parsed.error.issues[0];
+        const field = String(issue?.path?.[0] ?? "");
+        const fieldNames: Record<string, string> = {
+          model: "Model", brand: "Brend", color: "Rang",
+          storageGB: "Xotira (GB)", imei: "IMEI",
+          condition: "Holati (NEW/USED/REFURBISHED)",
+          costPrice: "Tan narxi", salePrice: "Sotuv narxi",
+        };
         formatErrors.push({
-          row: index + 2, // +1 — 0-index, +1 — sarlavha qatori
-          reason: parsed.error.issues[0]?.message ?? "Noto'g'ri format",
+          row: index + 2,
+          reason: `${fieldNames[field] ?? field || "Maydon"}: ${issue?.message ?? "Noto'g'ri format"}`,
         });
       }
     });
