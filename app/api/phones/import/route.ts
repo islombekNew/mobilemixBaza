@@ -64,14 +64,14 @@ export async function GET() {
     "Sotuv narxi",
   ];
   const exampleRow = [
-    "iPhone 13",
+    "iPhone 14 Pro",
     "Apple",
-    "Ko'k",
-    128,
-    "356789012345671",
+    "Qora",
+    256,
+    "999000000000001",
     "NEW",
-    5800000,
-    6500000,
+    9500000,
+    10500000,
   ];
 
   const sheet = XLSX.utils.aoa_to_sheet([headers, exampleRow]);

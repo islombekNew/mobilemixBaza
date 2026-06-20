@@ -87,23 +87,6 @@ async function main() {
       },
     });
 
-    await prisma.phone.upsert({
-      where: { imei: "356789012345671" },
-      update: {},
-      create: {
-        model: "iPhone 13",
-        brand: "Apple",
-        color: "Ko'k",
-        storageGB: 128,
-        imei: "356789012345671",
-        condition: "NEW",
-        costPrice: 5800000,
-        salePrice: 6500000,
-        status: "IN_STOCK",
-        branchId: branch1.id,
-        addedById: seller.id,
-      },
-    });
 
     console.log(`   Demo sotuvchi: login="${SELLER_LOGIN}", parol="${SELLER_PASSWORD}"`);
   }
