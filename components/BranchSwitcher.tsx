@@ -6,9 +6,10 @@ import type { Branch } from "@prisma/client";
 interface BranchSwitcherProps {
   branches: Branch[];
   className?: string;
+  showLabel?: boolean;
 }
 
-export function BranchSwitcher({ branches, className = "" }: BranchSwitcherProps) {
+export function BranchSwitcher({ branches, className = "", showLabel = true }: BranchSwitcherProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentBranchId = searchParams.get("branchId") ?? branches[0]?.id ?? "";
@@ -29,9 +30,11 @@ export function BranchSwitcher({ branches, className = "" }: BranchSwitcherProps
 
   return (
     <div className={className}>
-      <label htmlFor="branch-switcher" className="mb-1.5 block text-xs text-gray-400">
-        Filial
-      </label>
+      {showLabel && (
+        <label htmlFor="branch-switcher" className="mb-1.5 block text-xs text-gray-400">
+          Filial
+        </label>
+      )}
       <select
         id="branch-switcher"
         value={currentBranchId}

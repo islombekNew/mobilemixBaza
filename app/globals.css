@@ -20,3 +20,12 @@ body {
   background-clip: text;
   color: transparent;
 }
+
+/* Mobil pastki navigatsiya scrollbari yashirish */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
