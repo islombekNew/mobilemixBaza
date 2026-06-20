@@ -46,7 +46,7 @@ export async function getBranchDashboard(
 
   const monthStart = getPeriodStart(period);
 
-  const [inStockCount, inAddedThisMonth, salesThisMonth] = await Promise.all([
+  const [inStockCount, inAddedThisMonth, salesThisMonth, inStockPhones] = await Promise.all([
     prisma.phone.count({ where: { branchId, status: "IN_STOCK" } }),
     prisma.phone.findMany({
       where: { branchId, createdAt: { gte: monthStart } },
@@ -57,8 +57,12 @@ export async function getBranchDashboard(
       select: {
         finalPrice: true,
         saleDate: true,
-        phone: { select: { costPrice: true, model: true } },
+        phone: { select: { costPrice: true, model: true, brand: true } },
       },
+    }),
+    prisma.phone.findMany({
+      where: { branchId, status: "IN_STOCK" },
+      select: { condition: true },
     }),
   ]);
 
@@ -110,6 +114,51 @@ export async function getBranchDashboard(
     }
   }
 
+  // Kunlik sotuv seriyasi (chart uchun)
+  const dailyMap = new Map<string, { revenue: number; profit: number; count: number }>();
+  for (const sale of salesThisMonth) {
+    const key = startOfDay(sale.saleDate).toISOString().slice(0, 10);
+    const entry = dailyMap.get(key) ?? { revenue: 0, profit: 0, count: 0 };
+    entry.revenue += Number(sale.finalPrice);
+    entry.profit += Number(sale.finalPrice) - Number(sale.phone.costPrice);
+    entry.count += 1;
+    dailyMap.set(key, entry);
+  }
+
+  // Barcha kunlarni to'ldirish (bo'sh kunlar 0)
+  const periodDays = period === "today" || period === "yesterday" ? 1 : period === "week" ? 7 : 30;
+  const dailySeries: { date: string; revenue: number; profit: number; count: number }[] = [];
+  for (let i = 0; i < periodDays; i++) {
+    const day = new Date(monthStart.getTime() + i * 86400000);
+    const key = day.toISOString().slice(0, 10);
+    const entry = dailyMap.get(key) ?? { revenue: 0, profit: 0, count: 0 };
+    dailySeries.push({ date: key, ...entry });
+  }
+
+  // Top 5 model (sotuv soni bo'yicha)
+  const modelMap = new Map<string, { model: string; count: number; revenue: number }>();
+  for (const sale of salesThisMonth) {
+    const key = `${sale.phone.brand} ${sale.phone.model}`;
+    const entry = modelMap.get(key) ?? { model: key, count: 0, revenue: 0 };
+    entry.count += 1;
+    entry.revenue += Number(sale.finalPrice);
+    modelMap.set(key, entry);
+  }
+  const topModels = Array.from(modelMap.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  // Ombordagi telefonlar holati (pie chart uchun)
+  const conditionMap = new Map<string, number>();
+  for (const p of inStockPhones) {
+    conditionMap.set(p.condition, (conditionMap.get(p.condition) ?? 0) + 1);
+  }
+  const conditionStats = [
+    { condition: "NEW", label: "Yangi", count: conditionMap.get("NEW") ?? 0 },
+    { condition: "USED", label: "Ishlatilgan", count: conditionMap.get("USED") ?? 0 },
+    { condition: "REFURBISHED", label: "Qayta tiklangan", count: conditionMap.get("REFURBISHED") ?? 0 },
+  ].filter((c) => c.count > 0);
+
   return {
     inStockCount,
     incomingCount,
@@ -121,6 +170,9 @@ export async function getBranchDashboard(
     topModelCount,
     bestDay,
     bestDayRevenue,
+    dailySeries,
+    topModels,
+    conditionStats,
   };
 }
 
