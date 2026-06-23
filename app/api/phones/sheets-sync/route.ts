@@ -136,33 +136,41 @@ export async function POST(request: NextRequest) {
         results.push({ row: rowNum, status: "OK", message: "Yangilandi" });
 
       } else {
-        // ADD
+        // UPSERT — mavjud bo'lsa yangilaydi, yo'q bo'lsa qo'shadi
         const existing = await prisma.phone.findFirst({
           where: { imei: row.imei, deletedAt: null },
         });
         if (existing) {
-          results.push({
-            row: rowNum,
-            status: "SKIP",
-            message: `IMEI allaqachon mavjud: ${row.imei}`,
+          await updatePhone(systemUser, existing.id, {
+            model: row.model,
+            brand: row.brand,
+            color: row.color,
+            storageGB: row.storageGB,
+            condition: row.condition as PhoneCondition,
+            costPrice: row.costPrice,
+            salePrice: row.salePrice,
+            ramGB: row.ramGB ?? null,
+            warrantyMonths: row.warrantyMonths,
+            supplier: row.supplier ?? null,
           });
-          continue;
+          results.push({ row: rowNum, status: "OK", message: "Yangilandi" });
+        } else {
+          await createPhone(systemUser, {
+            model: row.model,
+            brand: row.brand,
+            color: row.color,
+            storageGB: row.storageGB,
+            imei: row.imei,
+            condition: row.condition as PhoneCondition,
+            costPrice: row.costPrice,
+            salePrice: row.salePrice,
+            branchId: branch.id,
+            ramGB: row.ramGB ?? null,
+            warrantyMonths: row.warrantyMonths,
+            supplier: row.supplier ?? null,
+          });
+          results.push({ row: rowNum, status: "OK", message: "Qo'shildi" });
         }
-        await createPhone(systemUser, {
-          model: row.model,
-          brand: row.brand,
-          color: row.color,
-          storageGB: row.storageGB,
-          imei: row.imei,
-          condition: row.condition as PhoneCondition,
-          costPrice: row.costPrice,
-          salePrice: row.salePrice,
-          branchId: branch.id,
-          ramGB: row.ramGB ?? null,
-          warrantyMonths: row.warrantyMonths,
-          supplier: row.supplier ?? null,
-        });
-        results.push({ row: rowNum, status: "OK", message: "Qo'shildi" });
       }
     } catch (err) {
       results.push({
