@@ -43,6 +43,18 @@ const rowSchema = z.object({
   ramGB: z.coerce.number().int().positive().optional().nullable(),
   warrantyMonths: z.coerce.number().int().min(0).default(0),
   supplier: z.string().trim().max(200).optional().nullable(),
+  hasBox: z.preprocess(
+    (v) => ["ha", "yes", "true", "1", "+"].includes(String(v).toLowerCase().trim()),
+    z.boolean()
+  ).default(false),
+  hasCharger: z.preprocess(
+    (v) => ["ha", "yes", "true", "1", "+"].includes(String(v).toLowerCase().trim()),
+    z.boolean()
+  ).default(false),
+  hasDocuments: z.preprocess(
+    (v) => ["ha", "yes", "true", "1", "+"].includes(String(v).toLowerCase().trim()),
+    z.boolean()
+  ).default(false),
 });
 
 type SyncResult = { row: number; status: "OK" | "SKIP" | "ERROR"; message: string };
@@ -141,6 +153,9 @@ export async function POST(request: NextRequest) {
           ramGB: row.ramGB ?? null,
           warrantyMonths: row.warrantyMonths,
           supplier: row.supplier ?? null,
+          hasBox: row.hasBox,
+          hasCharger: row.hasCharger,
+          hasDocuments: row.hasDocuments,
         });
         results.push({ row: rowNum, status: "OK", message: "Yangilandi" });
 
@@ -149,34 +164,30 @@ export async function POST(request: NextRequest) {
         const existing = await prisma.phone.findFirst({
           where: { imei: row.imei, deletedAt: null },
         });
+        const phoneFields = {
+          model: row.model,
+          brand: row.brand,
+          color: row.color,
+          storageGB: row.storageGB,
+          condition: row.condition as PhoneCondition,
+          costPrice: row.costPrice,
+          salePrice: row.salePrice,
+          ramGB: row.ramGB ?? null,
+          warrantyMonths: row.warrantyMonths,
+          supplier: row.supplier ?? null,
+          hasBox: row.hasBox,
+          hasCharger: row.hasCharger,
+          hasDocuments: row.hasDocuments,
+        };
+
         if (existing) {
-          await updatePhone(systemUser, existing.id, {
-            model: row.model,
-            brand: row.brand,
-            color: row.color,
-            storageGB: row.storageGB,
-            condition: row.condition as PhoneCondition,
-            costPrice: row.costPrice,
-            salePrice: row.salePrice,
-            ramGB: row.ramGB ?? null,
-            warrantyMonths: row.warrantyMonths,
-            supplier: row.supplier ?? null,
-          });
+          await updatePhone(systemUser, existing.id, phoneFields);
           results.push({ row: rowNum, status: "OK", message: "Yangilandi" });
         } else {
           await createPhone(systemUser, {
-            model: row.model,
-            brand: row.brand,
-            color: row.color,
-            storageGB: row.storageGB,
+            ...phoneFields,
             imei: row.imei,
-            condition: row.condition as PhoneCondition,
-            costPrice: row.costPrice,
-            salePrice: row.salePrice,
             branchId: branch.id,
-            ramGB: row.ramGB ?? null,
-            warrantyMonths: row.warrantyMonths,
-            supplier: row.supplier ?? null,
           });
           results.push({ row: rowNum, status: "OK", message: "Qo'shildi" });
         }
