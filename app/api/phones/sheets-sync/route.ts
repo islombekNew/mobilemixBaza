@@ -26,8 +26,17 @@ const rowSchema = z.object({
   condition: z
     .string()
     .trim()
-    .transform((v) => v.toUpperCase())
-    .pipe(z.enum(["NEW", "USED", "REFURBISHED"])),
+    .transform((v) => {
+      const map: Record<string, string> = {
+        yangi: "NEW", new: "NEW",
+        ishlatilgan: "USED", used: "USED", "б/у": "USED",
+        "qayta tiklangan": "REFURBISHED", refurbished: "REFURBISHED", "qayta tiklangan": "REFURBISHED",
+      };
+      return map[v.toLowerCase()] ?? v.toUpperCase();
+    })
+    .pipe(z.enum(["NEW", "USED", "REFURBISHED"], {
+      errorMap: () => ({ message: 'Holati: "yangi", "ishlatilgan" yoki "qayta tiklangan" bo\'lishi kerak' }),
+    })),
   costPrice: z.coerce.number().min(0, "Tan narxi manfiy bo'lishi mumkin emas"),
   salePrice: z.coerce.number().positive("Sotuv narxi musbat son bo'lishi kerak"),
   branch: z.string().trim().min(1, "Filial nomi kiritilishi shart"),
