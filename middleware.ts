@@ -8,14 +8,18 @@ const { auth } = NextAuth(authConfig);
 
 const PUBLIC_PATHS = ["/login"];
 
+// O'z Bearer-token tekshiruvi bor — session shart emas
+const PUBLIC_API_PATHS = ["/api/phones/sheets-sync"];
+
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth?.user;
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth");
+  const isPublicApiPath = PUBLIC_API_PATHS.includes(nextUrl.pathname);
   const isPublicPath =
     PUBLIC_PATHS.includes(nextUrl.pathname) || nextUrl.pathname === "/";
 
-  if (isApiAuthRoute) {
+  if (isApiAuthRoute || isPublicApiPath) {
     return NextResponse.next();
   }
 
