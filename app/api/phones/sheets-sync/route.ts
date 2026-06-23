@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { getSystemOwnerUser } from "@/lib/access-control";
-import { createPhone, updatePhone, deletePhone, bulkImportPhones } from "@/lib/phones";
+import { createPhone, updatePhone, deletePhone } from "@/lib/phones";
+import { sendTelegramMessage, escapeHtml } from "@/lib/telegram";
 import type { PhoneCondition } from "@prisma/client";
 
 const SHEETS_SECRET = process.env.SHEETS_SECRET;
@@ -175,6 +176,19 @@ export async function POST(request: NextRequest) {
   const ok = results.filter((r) => r.status === "OK").length;
   const skipped = results.filter((r) => r.status === "SKIP").length;
   const errors = results.filter((r) => r.status === "ERROR").length;
+
+  // Faqat kamida 1 ta muvaffaqiyatli amal bo'lganda Telegram ga xabar yuborish
+  if (ok > 0) {
+    const branches = [...new Set(rows.map((r) => (r as { branch?: string }).branch).filter(Boolean))];
+    const branchName = branches[0] ?? "Noma'lum filial";
+    void sendTelegramMessage(
+      `📦 <b>Google Sheets orqali yangi telefonlar</b>\n\n` +
+      `🏢 Filial: ${escapeHtml(String(branchName))}\n` +
+      `✅ Qo'shildi: ${ok} ta\n` +
+      `⏭️ O'tkazildi: ${skipped} ta\n` +
+      `❌ Xato: ${errors} ta`
+    ).catch((e: unknown) => console.error("[sheets-sync] Telegram xabari yuborilmadi:", e));
+  }
 
   return NextResponse.json({ results, summary: { ok, skipped, errors } });
 }
