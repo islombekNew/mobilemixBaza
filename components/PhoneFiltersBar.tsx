@@ -55,6 +55,18 @@ export function PhoneFiltersBar() {
         <option value="IN_STOCK">Omborda</option>
         <option value="SOLD">Sotilgan</option>
       </select>
+
+      <button
+        type="button"
+        onClick={() => updateParam("arxiv", searchParams.get("arxiv") === "1" ? "" : "1")}
+        className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+          searchParams.get("arxiv") === "1"
+            ? "border-[#ff4fd8] bg-brand-gradient text-white"
+            : "border-white/10 bg-black/30 text-gray-300 hover:bg-white/5"
+        }`}
+      >
+        🗄 Arxiv
+      </button>
     </div>
   );
 }

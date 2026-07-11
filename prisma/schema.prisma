@@ -36,6 +36,11 @@ enum PhoneStatus {
   SOLD // Sotilgan
 }
 
+enum Currency {
+  UZS // So'm
+  USD // AQSH dollari
+}
+
 enum PaymentType {
   CASH // Naqd
   CARD // Karta
@@ -51,6 +56,7 @@ enum CustomerStatus {
   ACTIVE // Faol qarz
   PAID // To'liq to'langan
   OVERDUE // Muddati o'tgan
+  CANCELLED // Sotuv qaytarilgan — qarz bekor
 }
 
 enum AuditAction {
@@ -60,9 +66,14 @@ enum AuditAction {
   PHONE_TRANSFERRED
   PHONE_IMPORTED
   SALE_CREATED
+  SALE_RETURNED
   DEBT_PAYMENT_CREATED
   BRANCH_CREATED
+  BRANCH_DELETED
+  BRANCH_ARCHIVED
   USER_CREATED
+  USER_UPDATED
+  USER_BLOCKED
 }
 
 // ----------------------------------------------------------------------------
@@ -74,6 +85,9 @@ model Branch {
   name        String
   address     String
   phoneNumber String
+  // Arxivlangan filial ro'yxatlarda ko'rinmaydi (ichida telefon/sotuv
+  // tarixi bo'lgan filial O'CHIRILMAYDI — faqat arxivlanadi)
+  archivedAt  DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -91,6 +105,9 @@ model User {
   login        String   @unique
   passwordHash String
   role         Role
+  // Bloklangan xodim (soft-delete): tizimga kira olmaydi, lekin uning
+  // sotuvlari/audit tarixi buzilmasligi uchun yozuv O'CHIRILMAYDI
+  deletedAt    DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -103,6 +120,7 @@ model User {
   auditLogs   AuditLog[]
 
   @@index([branchId])
+  @@index([deletedAt])
   @@map("users")
 }
 
@@ -116,9 +134,15 @@ model Phone {
   condition      PhoneCondition
   costPrice      Decimal        @db.Decimal(12, 2)
   salePrice      Decimal        @db.Decimal(12, 2)
+  // Tan narx va sotuv narxi qaysi valyutada kiritilgan (ikkalasi bitta valyutada)
+  currency       Currency       @default(UZS)
   status         PhoneStatus    @default(IN_STOCK)
   photoUrl       String?
   deletedAt      DateTime?
+  // Oylik arxiv: o'tgan oylarda sotilgan telefonlar har oy boshida
+  // arxivga o'tadi (api/cron/archive-sold) — ombor ro'yxatida ko'rinmaydi,
+  // lekin hisobotlar/tarix uchun bazada to'liq saqlanadi. O'CHIRILMAYDI.
+  archivedAt     DateTime?
   // Qo'shimcha maydonlar
   ramGB          Int?
   batteryHealth  Int?           // 0-100 foiz, faqat ishlatilgan/refurbished uchun
@@ -143,14 +167,24 @@ model Phone {
   @@index([model, brand])
   @@index([imei])
   @@index([deletedAt])
+  @@index([archivedAt])
   @@map("phones")
 }
 
 model Sale {
   id          String      @id @default(cuid())
   finalPrice  Decimal     @db.Decimal(12, 2)
+  // finalPrice qaysi valyutada kiritilgan
+  currency    Currency    @default(UZS)
   paymentType PaymentType
   saleDate    DateTime    @default(now())
+  // Telegram kanaliga "sotildi" posti chiqarilganmi (har 5 sotuvda
+  // bitta post — lib/telegram-channel.ts)
+  postedToChannel Boolean @default(false)
+  // Qaytarilgan sotuv: telefon omborga qaytadi, sotuv hisobotlardan
+  // chiqadi, lekin yozuv tarix uchun saqlanadi (O'CHIRILMAYDI)
+  returnedAt   DateTime?
+  returnReason String?
 
   phoneId String @unique
   phone   Phone  @relation(fields: [phoneId], references: [id])
@@ -167,6 +201,7 @@ model Sale {
   @@index([branchId])
   @@index([sellerId])
   @@index([saleDate])
+  @@index([returnedAt])
   @@map("sales")
 }
 
@@ -176,6 +211,9 @@ model Customer {
   phoneNumber String
   totalAmount Decimal        @db.Decimal(12, 2)
   paidAmount  Decimal        @default(0) @db.Decimal(12, 2)
+  // Qarz valyutasi — sotuv valyutasidan ko'chiriladi (totalAmount, paidAmount
+  // va barcha DebtPayment'lar shu valyutada)
+  currency    Currency       @default(UZS)
   dueDate     DateTime
   paymentPlan PaymentPlan
   status      CustomerStatus @default(ACTIVE)
@@ -205,6 +243,17 @@ model DebtPayment {
 
   @@index([customerId])
   @@map("debt_payments")
+}
+
+// USD/UZS kursi — kuniga bir marta CBU (Markaziy bank) API'sidan olinib,
+// shu jadvalga saqlanadi. Har so'rovda API chaqirilmaydi (lib/exchange-rate.ts).
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  date      DateTime @unique @db.Date
+  usdToUzs  Decimal  @db.Decimal(12, 2)
+  createdAt DateTime @default(now())
+
+  @@map("exchange_rates")
 }
 
 // PRD 4.3: "Barcha muhim amallar (sotuv, telefon o'chirish, qarz to'lovi)

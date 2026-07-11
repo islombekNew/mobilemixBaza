@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/session";
-import { updateBranch } from "@/lib/branches";
+import { updateBranch, deleteOrArchiveBranch } from "@/lib/branches";
 import { handleApiError } from "@/lib/api-errors";
 import { z } from "zod";
 
@@ -22,6 +22,25 @@ export async function PATCH(
     const input = updateSchema.parse(body);
     const branch = await updateBranch(user, id, input);
     return NextResponse.json({ branch });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+/**
+ * Filialni o'chirish/arxivlash: bo'sh filial butunlay o'chadi, ma'lumoti
+ * bori esa arxivlanadi (tarix saqlanadi) — lib/branches.ts.
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await requireUser();
+  const { id } = await params;
+
+  try {
+    const result = await deleteOrArchiveBranch(user, id);
+    return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);
   }

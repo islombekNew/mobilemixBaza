@@ -8,12 +8,22 @@ interface PhoneRow {
   model: string;
   brand: string;
   salePrice: string | number;
+  currency?: string;
+}
+
+export interface SellerOption {
+  id: string;
+  name: string;
+  role: string;
 }
 
 interface SellModalProps {
   phone: PhoneRow;
   branchId: string;
   onClose: () => void;
+  /** Faqat OWNER uchun to'ldiriladi — "kim sotyapti"ni tanlash ro'yxati */
+  sellers?: SellerOption[];
+  currentUserId?: string;
 }
 
 type PaymentType = "CASH" | "CARD" | "CREDIT";
@@ -25,10 +35,22 @@ function todayPlus(days: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export function SellModal({ phone, branchId, onClose }: SellModalProps) {
+export function SellModal({
+  phone,
+  branchId,
+  onClose,
+  sellers = [],
+  currentUserId,
+}: SellModalProps) {
   const router = useRouter();
   const [paymentType, setPaymentType] = useState<PaymentType>("CASH");
+  // Kim sotyapti — sukut bo'yicha hozir kirgan foydalanuvchi
+  const [sellerId, setSellerId] = useState(currentUserId ?? "");
   const [finalPrice, setFinalPrice] = useState(String(phone.salePrice));
+  // Sotuv valyutasi — sukut bo'yicha telefon narxi kiritilgan valyuta
+  const [currency, setCurrency] = useState<"UZS" | "USD">(
+    phone.currency === "USD" ? "USD" : "UZS"
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +72,11 @@ export function SellModal({ phone, branchId, onClose }: SellModalProps) {
         branchId,
         paymentType,
         finalPrice,
+        currency,
       };
+      if (sellerId) {
+        body.sellerId = sellerId;
+      }
 
       if (paymentType === "CREDIT") {
         body.customer = {
@@ -81,8 +107,8 @@ export function SellModal({ phone, branchId, onClose }: SellModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#1a0a2e] p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
+      <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#1a0a2e] p-6 sm:rounded-2xl">
         <h2 className="mb-1 text-lg font-semibold text-white">
           Sotuv: {phone.brand} {phone.model}
         </h2>
@@ -91,6 +117,28 @@ export function SellModal({ phone, branchId, onClose }: SellModalProps) {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Kim sotyapti — faqat OWNER'ga ko'rinadi (sotuvchi doim o'zi) */}
+          {sellers.length > 0 && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-300">
+                Kim sotyapti
+              </label>
+              <select
+                value={sellerId}
+                onChange={(e) => setSellerId(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#ff4fd8]"
+              >
+                {sellers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                    {s.role === "OWNER" ? " (egasi)" : ""}
+                    {s.id === currentUserId ? " — men" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* PRD 3.5: To'lov turi - Naqd / Karta / Kredit */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-300">
@@ -116,7 +164,29 @@ export function SellModal({ phone, branchId, onClose }: SellModalProps) {
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-300">
-              Sotuv summasi
+              Valyuta
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["UZS", "USD"] as const).map((cur) => (
+                <button
+                  key={cur}
+                  type="button"
+                  onClick={() => setCurrency(cur)}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    currency === cur
+                      ? "border-[#ff4fd8] bg-brand-gradient text-white"
+                      : "border-white/10 bg-black/30 text-gray-300 hover:bg-white/5"
+                  }`}
+                >
+                  {cur === "UZS" ? "So'm" : "$ Dollar"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-300">
+              Sotuv summasi ({currency === "USD" ? "$" : "so'm"})
             </label>
             <input
               type="number"

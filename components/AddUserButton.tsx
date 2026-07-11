@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/PasswordInput";
 
 interface BranchOption {
   id: string;
@@ -67,8 +68,8 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1a0a2e] p-6">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
+          <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#1a0a2e] p-6 sm:rounded-2xl">
             <h2 className="mb-4 text-lg font-semibold text-white">
               Yangi xodim qo&apos;shish
             </h2>
@@ -96,11 +97,11 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
                   type="text"
                   value={form.login}
                   onChange={(e) => setForm({ ...form, login: e.target.value })}
-                  placeholder="seller2"
+                  placeholder="seller2 yoki +998901234567"
                   required
                   minLength={3}
-                  pattern="[a-zA-Z0-9_.\-]+"
-                  title="Faqat harf, raqam, '_', '.', '-' belgilari"
+                  pattern="\+?[a-zA-Z0-9_.\-]+"
+                  title="Faqat harf, raqam, '+', '_', '.', '-' belgilari"
                   className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
                 />
               </div>
@@ -109,14 +110,12 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
                   Vaqtinchalik parol
                 </label>
-                <input
-                  type="text"
+                <PasswordInput
                   value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  onChange={(v) => setForm({ ...form, password: v })}
                   placeholder="Kamida 6 belgi"
                   required
                   minLength={6}
-                  className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
                 />
               </div>
 

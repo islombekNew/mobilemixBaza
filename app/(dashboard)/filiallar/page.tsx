@@ -3,6 +3,7 @@ import { listBranches } from "@/lib/branches";
 import { redirect } from "next/navigation";
 import { AddBranchButton } from "@/components/AddBranchButton";
 import { EditBranchButton } from "@/components/EditBranchButton";
+import { DeleteBranchButton } from "@/components/DeleteBranchButton";
 import type { Branch } from "@prisma/client";
 
 export default async function FiliallarPage() {
@@ -30,7 +31,10 @@ export default async function FiliallarPage() {
                 <p className="mt-1 text-sm text-gray-400">{branch.address}</p>
                 <p className="mt-1 text-sm text-gray-500">{branch.phoneNumber}</p>
               </div>
-              <EditBranchButton branch={branch} />
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <EditBranchButton branch={branch} />
+                <DeleteBranchButton branchId={branch.id} branchName={branch.name} />
+              </div>
             </div>
           </div>
         ))}

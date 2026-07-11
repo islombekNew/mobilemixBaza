@@ -9,10 +9,13 @@
  * beradi.
  */
 
+import prisma from "@/lib/prisma";
 import { getSystemOwnerUser } from "@/lib/access-control";
 import { compareBranches, getDailySummaryAllBranches } from "@/lib/reports";
 import { getAllOverdueCustomers } from "@/lib/customers";
-import { escapeHtml, formatSum, formatDate } from "@/lib/telegram";
+import { escapeHtml, formatSum, formatMoneyTg, formatDate } from "@/lib/telegram";
+import { postSoldPhonesToChannel, isChannelConfigured } from "@/lib/telegram-channel";
+import { getUsdRate } from "@/lib/exchange-rate";
 
 const HELP_TEXT =
   `🤖 <b>Mix Mobile bot</b>\n\n` +
@@ -20,7 +23,19 @@ const HELP_TEXT =
   `/holat — shu oy bo'yicha filiallar holati\n` +
   `/bugun — bugungi sotuvlar (har filial)\n` +
   `/qarzlar — muddati o'tgan qarzlar ro'yxati\n` +
-  `/yordam — shu xabar`;
+  `/kanalga — sotilganlarni kanalga post qilish\n` +
+  `/yordam — shu xabar\n\n` +
+  `📱 Telefon qo'shish: rasm yuboring, izohiga\n` +
+  `<code>Brend Model 128GB Rang Narx IMEI</code> yozing.\n\n` +
+  `🔎 Ombor qidiruvi: shunchaki model nomini yozing\n` +
+  `(masalan: <code>iPhone 13</code>)`;
+
+/** Mijozlar (admin bo'lmaganlar) uchun qisqa salomlashish matni. */
+export const CUSTOMER_GREETING =
+  `Assalomu alaykum! 🤖\n\n` +
+  `Men do'kon yordamchi botiman. Qaysi telefon kerakligini yozing — ` +
+  `omborda bor-yo'qligini va narxini darhol aytaman.\n\n` +
+  `Masalan: <code>iPhone 13</code> yoki <code>Samsung S23</code>`;
 
 async function buildHolatReport(): Promise<string> {
   const owner = await getSystemOwnerUser();
@@ -73,7 +88,7 @@ async function buildQarzlarReport(): Promise<string> {
     return (
       `👤 <b>${escapeHtml(c.fullName)}</b> (${escapeHtml(c.phoneNumber)})\n` +
       `   Filial: ${escapeHtml(c.sale.branch.name)}\n` +
-      `   Qarz: ${formatSum(remaining)}\n` +
+      `   Qarz: ${formatMoneyTg(remaining, c.currency)}\n` +
       `   Muddat: ${formatDate(c.dueDate)}`
     );
   });
@@ -88,15 +103,137 @@ async function buildQarzlarReport(): Promise<string> {
   );
 }
 
+async function buildKanalgaReport(): Promise<string> {
+  if (!isChannelConfigured()) {
+    return (
+      "⚠️ Kanal sozlanmagan. TELEGRAM_CHANNEL_ID environment variable'ni " +
+      "kiriting (masalan @dokon_kanali) va botni kanalga admin qiling."
+    );
+  }
+  const posted = await postSoldPhonesToChannel(true);
+  return posted > 0
+    ? `✅ ${posted} ta sotuv kanalga post qilindi.`
+    : "Hozircha kanalga chiqarilmagan yangi sotuv yo'q.";
+}
+
+// Qidiruv so'rovidan olib tashlanadigan "shovqin" so'zlar —
+// "iPhone 13 bormi, narxi qancha?" → "iphone 13"
+const NOISE_WORDS = new Set([
+  "bormi", "bor", "yo'qmi", "yoqmi", "narxi", "narx", "qancha", "necha",
+  "pul", "so'm", "som", "dollar", "kerak", "salom", "assalomu", "alaykum",
+  "iltimos", "menga", "telefon", "qanaqa", "va", "bilan", "uchun",
+]);
+
+/**
+ * SEKRETAR BOT (5.4): erkin matnli so'rov bo'yicha OMBORDAN qidiradi —
+ * AI ishlatilmaydi, faqat kalit so'z + baza qidiruvi. Barcha filiallar
+ * bo'yicha "Omborda" statusidagi telefonlar tekshiriladi.
+ */
+export async function buildInventorySearchReply(rawQuery: string): Promise<string> {
+  const tokens = rawQuery
+    .toLowerCase()
+    .replace(/[?!.,:;"']/g, " ")
+    .split(/\s+/)
+    .filter((t) => t.length >= 2 && !NOISE_WORDS.has(t));
+
+  if (tokens.length === 0) {
+    return (
+      `Qidirish uchun telefon modelini yozing.\n` +
+      `Masalan: <code>iPhone 13</code> yoki <code>Redmi Note 12</code>`
+    );
+  }
+
+  const phones = await prisma.phone.findMany({
+    where: {
+      status: "IN_STOCK",
+      deletedAt: null,
+      archivedAt: null,
+      AND: tokens.map((token) => ({
+        OR: [
+          { model: { contains: token, mode: "insensitive" as const } },
+          { brand: { contains: token, mode: "insensitive" as const } },
+          { color: { contains: token, mode: "insensitive" as const } },
+        ],
+      })),
+    },
+    select: {
+      brand: true,
+      model: true,
+      storageGB: true,
+      color: true,
+      salePrice: true,
+      currency: true,
+      condition: true,
+    },
+    orderBy: [{ brand: "asc" }, { model: "asc" }],
+    take: 50,
+  });
+
+  if (phones.length === 0) {
+    return (
+      `❌ <b>"${escapeHtml(rawQuery.trim())}"</b> hozircha omborda yo'q.\n\n` +
+      `Boshqa model nomi bilan qidirib ko'ring yoki keyinroq so'rang — ` +
+      `yangi telefonlar tez-tez keladi! 📦`
+    );
+  }
+
+  // Bir xil model+xotira variantlarini guruhlash
+  const grouped = new Map<
+    string,
+    { title: string; count: number; minPrice: number; currency: "UZS" | "USD"; isNew: boolean }
+  >();
+  for (const p of phones) {
+    const key = `${p.brand} ${p.model} ${p.storageGB}`;
+    const price = Number(p.salePrice);
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.count += 1;
+      if (price < existing.minPrice) {
+        existing.minPrice = price;
+        existing.currency = p.currency;
+      }
+    } else {
+      grouped.set(key, {
+        title: `${p.brand} ${p.model} (${p.storageGB}GB)`,
+        count: 1,
+        minPrice: price,
+        currency: p.currency,
+        isNew: p.condition === "NEW",
+      });
+    }
+  }
+
+  const usdRate = await getUsdRate();
+  const lines = Array.from(grouped.values())
+    .slice(0, 10)
+    .map((g) => {
+      const approx =
+        g.currency === "USD"
+          ? ` (≈ ${formatMoneyTg(g.minPrice * usdRate, "UZS")})`
+          : "";
+      const countNote = g.count > 1 ? ` — ${g.count} dona` : "";
+      return `✅ <b>${escapeHtml(g.title)}</b>${countNote}\n    💰 ${formatMoneyTg(g.minPrice, g.currency)}${approx}`;
+    });
+
+  return (
+    `🔎 Topildi (${phones.length} ta):\n\n${lines.join("\n\n")}\n\n` +
+    `📞 Buyurtma yoki savol uchun bizga yozing!`
+  );
+}
+
 /**
  * Kelgan matnli buyruqni ishlab, javob matnini qaytaradi.
- * Noma'lum buyruq bo'lsa, yordam xabarini qaytaradi.
+ * "/" bilan boshlanmagan matn — ombor qidiruvi (sekretar bot).
  */
 export async function handleTelegramCommand(rawText: string): Promise<string> {
   const text = rawText.trim().toLowerCase();
   const command = text.split(/\s+/)[0];
 
   try {
+    if (!command.startsWith("/")) {
+      return await buildInventorySearchReply(rawText);
+    }
+
     switch (command) {
       case "/start":
       case "/yordam":
@@ -108,6 +245,8 @@ export async function handleTelegramCommand(rawText: string): Promise<string> {
         return await buildBugunReport();
       case "/qarzlar":
         return await buildQarzlarReport();
+      case "/kanalga":
+        return await buildKanalgaReport();
       default:
         return `Buyruq tushunilmadi. 👇\n\n${HELP_TEXT}`;
     }

@@ -6,6 +6,8 @@ import { PhoneTable } from "@/components/PhoneTable";
 import { AddPhoneButton } from "@/components/AddPhoneButton";
 import { ImportPhonesButton } from "@/components/ImportPhonesButton";
 import { PhoneFiltersBar } from "@/components/PhoneFiltersBar";
+import { getUsdRate } from "@/lib/exchange-rate";
+import { formatMoney } from "@/lib/currency";
 import type { Branch, PhoneCondition, PhoneStatus } from "@prisma/client";
 
 interface OmborPageProps {
@@ -15,6 +17,7 @@ interface OmborPageProps {
     brand?: string;
     condition?: string;
     status?: string;
+    arxiv?: string;
   }>;
 }
 
@@ -38,20 +41,39 @@ export default async function OmborPage({ searchParams }: OmborPageProps) {
     );
   }
 
-  const phones = await listPhones(user, branchId, {
-    search: params.search,
-    brand: params.brand,
-    condition: params.condition as PhoneCondition | undefined,
-    status: params.status as PhoneStatus | undefined,
-  });
+  const showArchive = params.arxiv === "1";
+
+  const [phones, usdRate] = await Promise.all([
+    listPhones(user, branchId, {
+      search: params.search,
+      brand: params.brand,
+      condition: params.condition as PhoneCondition | undefined,
+      status: params.status as PhoneStatus | undefined,
+      archived: showArchive,
+    }),
+    getUsdRate(),
+  ]);
 
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-white">Ombor</h1>
+        <div>
+          <h1 className="text-2xl font-semibold text-white">
+            {showArchive ? "Arxiv — o'tgan oylarda sotilganlar" : "Ombor"}
+          </h1>
+          <p className="mt-1 text-xs text-gray-500">
+            {showArchive
+              ? "Bu telefonlar o'tgan oylarda sotilgan va arxivga o'tkazilgan. Ma'lumot o'chirilmagan — hisobotlarda to'liq saqlanadi."
+              : `Kurs (CBU): 1$ = ${formatMoney(usdRate, "UZS")}`}
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2">
-          <ImportPhonesButton branchId={branchId} />
-          <AddPhoneButton branchId={branchId} />
+          {!showArchive && (
+            <>
+              <ImportPhonesButton branchId={branchId} />
+              <AddPhoneButton branchId={branchId} />
+            </>
+          )}
         </div>
       </div>
 
@@ -61,6 +83,7 @@ export default async function OmborPage({ searchParams }: OmborPageProps) {
         phones={phones as any}
         branches={branches.map((b: Branch) => ({ id: b.id, name: b.name }))}
         isOwner={user.role === "OWNER"}
+        usdRate={usdRate}
       />
     </div>
   );

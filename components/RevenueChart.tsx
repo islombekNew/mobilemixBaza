@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import { formatAxisMoney } from "@/lib/currency";
 
 interface RevenueChartPoint {
   date: string; // "2026-06-20"
@@ -27,6 +28,32 @@ function formatDayLabel(isoDate: string) {
 
 function formatTooltipValue(value: number) {
   return `${value.toLocaleString("uz-UZ")} so'm`;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  const hasLoss = payload.some(
+    (p: { dataKey: string; value: number }) => p.dataKey === "profit" && p.value < 0
+  );
+  return (
+    <div className="max-w-[220px] rounded-lg border border-white/10 bg-[#1a0a2e] p-3 text-xs shadow-lg">
+      <p className="mb-1 font-semibold text-gray-300">{formatDayLabel(String(label))}</p>
+      {payload.map((p: { dataKey: string; value: number; color: string }, i: number) => (
+        <p
+          key={i}
+          style={{ color: p.dataKey === "profit" && p.value < 0 ? "#f87171" : p.color }}
+        >
+          {p.dataKey === "revenue" ? "Tushum" : "Foyda"}: {formatTooltipValue(Number(p.value))}
+        </p>
+      ))}
+      {hasLoss && (
+        <p className="mt-1.5 border-t border-white/10 pt-1.5 text-[11px] leading-snug text-red-300/80">
+          ⚠️ Bu kunda telefon(lar) kelgan narxidan arzon sotilgan
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** Oxirgi 30 kunlik tushum/foyda grafigi (hisobotlar sahifasi). */
@@ -56,21 +83,10 @@ export function RevenueChart({ data }: RevenueChartProps) {
           <YAxis
             stroke="#9ca3af"
             fontSize={11}
-            tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
+            width={52}
+            tickFormatter={formatAxisMoney}
           />
-          <Tooltip
-            contentStyle={{
-              background: "#1a0a2e",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 8,
-              fontSize: 12,
-            }}
-            labelFormatter={(label) => formatDayLabel(String(label))}
-            formatter={(value, name) => [
-              formatTooltipValue(Number(value)),
-              name === "revenue" ? "Tushum" : "Foyda",
-            ]}
-          />
+          <Tooltip content={<ChartTooltip />} />
           <Line
             type="monotone"
             dataKey="revenue"

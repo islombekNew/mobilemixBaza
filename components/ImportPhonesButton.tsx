@@ -63,8 +63,8 @@ export function ImportPhonesButton({ branchId }: ImportPhonesButtonProps) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1a0a2e] p-6">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
+          <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#1a0a2e] p-6 sm:rounded-2xl">
             <h2 className="mb-1 text-lg font-semibold text-white">
               Excel&apos;dan ulgurji import
             </h2>

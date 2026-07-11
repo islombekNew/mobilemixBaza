@@ -80,7 +80,7 @@ export function resolveBranchId(
  */
 export async function getSystemOwnerUser(): Promise<SessionUser> {
   const owner = await prisma.user.findFirst({
-    where: { role: "OWNER" },
+    where: { role: "OWNER", deletedAt: null },
     select: { id: true },
   });
 

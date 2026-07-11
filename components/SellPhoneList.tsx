@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SellModal } from "@/components/SellModal";
+import { SellModal, type SellerOption } from "@/components/SellModal";
+import { formatMoney } from "@/lib/currency";
 
 interface PhoneRow {
   id: string;
@@ -11,18 +12,22 @@ interface PhoneRow {
   storageGB: number;
   imei: string;
   salePrice: string | number;
+  currency?: string;
 }
 
 interface SellPhoneListProps {
   phones: PhoneRow[];
   branchId: string;
+  sellers?: SellerOption[];
+  currentUserId?: string;
 }
 
-function formatSum(value: string | number) {
-  return Number(value).toLocaleString("uz-UZ") + " so'm";
-}
-
-export function SellPhoneList({ phones, branchId }: SellPhoneListProps) {
+export function SellPhoneList({
+  phones,
+  branchId,
+  sellers = [],
+  currentUserId,
+}: SellPhoneListProps) {
   const [selectedPhone, setSelectedPhone] = useState<PhoneRow | null>(null);
 
   if (phones.length === 0) {
@@ -50,7 +55,7 @@ export function SellPhoneList({ phones, branchId }: SellPhoneListProps) {
                 IMEI: {phone.imei}
               </p>
               <p className="mt-2 font-medium text-white">
-                {formatSum(phone.salePrice)}
+                {formatMoney(Number(phone.salePrice), phone.currency === "USD" ? "USD" : "UZS")}
               </p>
             </div>
             <button
@@ -67,6 +72,8 @@ export function SellPhoneList({ phones, branchId }: SellPhoneListProps) {
         <SellModal
           phone={selectedPhone}
           branchId={branchId}
+          sellers={sellers}
+          currentUserId={currentUserId}
           onClose={() => setSelectedPhone(null)}
         />
       )}

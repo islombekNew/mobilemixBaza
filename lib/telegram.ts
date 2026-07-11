@@ -21,9 +21,23 @@ function getBotToken(): string | undefined {
   return process.env.TELEGRAM_BOT_TOKEN;
 }
 
+/**
+ * Admin chat ID'lari ro'yxati. TELEGRAM_ADMIN_CHAT_ID bitta ID yoki
+ * vergul bilan ajratilgan bir nechta ID bo'lishi mumkin:
+ *   TELEGRAM_ADMIN_CHAT_ID=123456789
+ *   TELEGRAM_ADMIN_CHAT_ID=123456789,987654321
+ */
+export function getAdminChatIds(): string[] {
+  const raw = process.env.TELEGRAM_ADMIN_CHAT_ID ?? "";
+  return raw
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
 /** Bot to'liq sozlanganmi (token + admin chat id) — shartli logikada ishlatiladi. */
 export function isTelegramConfigured(): boolean {
-  return Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_ADMIN_CHAT_ID);
+  return Boolean(process.env.TELEGRAM_BOT_TOKEN && getAdminChatIds().length > 0);
 }
 
 /**
@@ -43,6 +57,15 @@ export function escapeHtml(value: string): string {
 export function formatSum(amount: number): string {
   const rounded = Math.round(amount);
   return `${rounded.toLocaleString("uz-UZ").replace(/,/g, " ")} so'm`;
+}
+
+/** Valyutaga qarab "1 250 000 so'm" yoki "$530" ko'rinishida formatlaydi. */
+export function formatMoneyTg(amount: number, currency: "UZS" | "USD" = "UZS"): string {
+  if (currency === "USD") {
+    const rounded = Math.round(amount * 100) / 100;
+    return `$${rounded.toLocaleString("en-US")}`;
+  }
+  return formatSum(amount);
 }
 
 /** Sanani "20.06.2026" ko'rinishida formatlaydi (Toshkent vaqti). */
@@ -71,40 +94,48 @@ export async function sendTelegramMessage(
   options: SendMessageOptions = {}
 ): Promise<TelegramSendResult> {
   const token = getBotToken();
-  const chatId = options.chatId ?? process.env.TELEGRAM_ADMIN_CHAT_ID;
+  // Aniq chatId berilsa — faqat unga; berilmasa — BARCHA adminlarga
+  const chatIds = options.chatId ? [options.chatId] : getAdminChatIds();
 
-  if (!token || !chatId) {
+  if (!token || chatIds.length === 0) {
     console.warn(
       "[telegram] TELEGRAM_BOT_TOKEN yoki TELEGRAM_ADMIN_CHAT_ID sozlanmagan — xabar yuborilmadi."
     );
     return { ok: false, skipped: true };
   }
 
-  try {
-    const response = await fetch(`${TELEGRAM_API_BASE}/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: options.parseMode ?? "HTML",
-        disable_web_page_preview: true,
-        disable_notification: options.disableNotification ?? false,
-      }),
-    });
+  let lastError: string | undefined;
+  let anyOk = false;
 
-    const data = await response.json();
+  for (const chatId of chatIds) {
+    try {
+      const response = await fetch(`${TELEGRAM_API_BASE}/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          parse_mode: options.parseMode ?? "HTML",
+          disable_web_page_preview: true,
+          disable_notification: options.disableNotification ?? false,
+        }),
+      });
 
-    if (!response.ok || !data.ok) {
-      console.error("[telegram] Xabar yuborilmadi:", data.description ?? response.statusText);
-      return { ok: false, error: data.description ?? "Noma'lum xatolik" };
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        console.error("[telegram] Xabar yuborilmadi:", data.description ?? response.statusText);
+        lastError = data.description ?? "Noma'lum xatolik";
+      } else {
+        anyOk = true;
+      }
+    } catch (error) {
+      console.error("[telegram] So'rovda xatolik:", error);
+      lastError = String(error);
     }
-
-    return { ok: true };
-  } catch (error) {
-    console.error("[telegram] So'rovda xatolik:", error);
-    return { ok: false, error: String(error) };
   }
+
+  return anyOk ? { ok: true } : { ok: false, error: lastError };
 }
 
 /**

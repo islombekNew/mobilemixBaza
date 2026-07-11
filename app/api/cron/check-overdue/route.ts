@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSystemOwnerUser } from "@/lib/access-control";
-import { syncOverdueStatuses } from "@/lib/customers";
+import {
+  syncOverdueStatuses,
+  getDueTodayCustomers,
+  getAllOverdueCustomers,
+} from "@/lib/customers";
+import { notifyDebtReminders } from "@/lib/telegram-notify";
 
 /**
  * Muddati o'tgan qarzlarni tekshirish — Vercel Cron orqali har 3 soatda
@@ -28,7 +33,31 @@ export async function GET(request: NextRequest) {
       await syncOverdueStatuses(owner, branch.id);
     }
 
-    return NextResponse.json({ ok: true, checkedBranches: branches.length });
+    // Kunlik qarz eslatmasi: bugun muddati kelganlar + muddati o'tganlar
+    // bitta xabarda barcha adminlarga (statuslar yangilangandan KEYIN,
+    // shu kunda OVERDUE bo'lganlar ham ro'yxatga tushishi uchun).
+    const [dueToday, overdue] = await Promise.all([
+      getDueTodayCustomers(owner),
+      getAllOverdueCustomers(owner),
+    ]);
+
+    const toReminder = (c: (typeof dueToday)[number]) => ({
+      fullName: c.fullName,
+      phoneNumber: c.phoneNumber,
+      remainingDebt: Number(c.totalAmount) - Number(c.paidAmount),
+      currency: c.currency,
+      dueDate: c.dueDate,
+      branchName: c.sale.branch.name,
+    });
+
+    await notifyDebtReminders(dueToday.map(toReminder), overdue.map(toReminder));
+
+    return NextResponse.json({
+      ok: true,
+      checkedBranches: branches.length,
+      dueToday: dueToday.length,
+      overdue: overdue.length,
+    });
   } catch (error) {
     console.error("[cron/check-overdue] Xatolik:", error);
     return NextResponse.json({ ok: false, error: "Tekshirishda xatolik" }, { status: 500 });

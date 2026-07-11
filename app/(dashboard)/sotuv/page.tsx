@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/session";
 import { listBranches } from "@/lib/branches";
 import { listPhones } from "@/lib/phones";
 import { listSales } from "@/lib/sales";
+import { listActiveSellersForBranch } from "@/lib/users";
 import { resolveBranchId } from "@/lib/access-control";
 import { SellPhoneList } from "@/components/SellPhoneList";
 import { SalesHistory } from "@/components/SalesHistory";
@@ -31,9 +32,13 @@ export default async function SotuvPage({ searchParams }: SotuvPageProps) {
     );
   }
 
-  const [phones, sales] = await Promise.all([
+  const [phones, sales, sellers] = await Promise.all([
     listPhones(user, branchId, { status: "IN_STOCK" }),
     listSales(user, branchId),
+    // "Kim sotyapti"ni faqat OWNER tanlaydi; seller doim o'zi nomidan sotadi
+    user.role === "OWNER"
+      ? listActiveSellersForBranch(user, branchId)
+      : Promise.resolve([]),
   ]);
 return (
   <div className="space-y-8">
@@ -41,8 +46,13 @@ return (
       <h1 className="mb-4 text-2xl font-semibold text-white">
         Sotuv — omborda mavjud telefonlar
       </h1>
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <SellPhoneList phones={phones as any} branchId={branchId} />
+      <SellPhoneList
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        phones={phones as unknown as any}
+        branchId={branchId}
+        sellers={sellers}
+        currentUserId={user.id}
+      />
     </div>
 
     <div>
@@ -50,7 +60,7 @@ return (
         Sotuvlar tarixi
       </h2>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <SalesHistory sales={sales as any} />
+      <SalesHistory sales={sales as any} isOwner={user.role === "OWNER"} />
     </div>
   </div>
 );}

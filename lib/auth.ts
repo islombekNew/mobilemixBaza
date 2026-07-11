@@ -29,6 +29,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user) return null;
 
+        // Bloklangan (deletedAt to'ldirilgan) xodim tizimga kira olmaydi
+        if (user.deletedAt) return null;
+
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) return null;
 

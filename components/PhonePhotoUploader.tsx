@@ -6,6 +6,28 @@ import { useRouter } from "next/navigation";
 interface PhonePhotoUploaderProps {
   phoneId: string;
   photoUrl: string | null;
+  /** Rasm yo'q bo'lganda brend nomidan rangli placeholder yasash uchun */
+  brand?: string;
+  model?: string;
+}
+
+// Brend nomidan barqaror (deterministik) gradient tanlaydi — bir xil brend
+// doim bir xil rangda chiqadi, bo'sh kulrang katak o'rniga.
+const PLACEHOLDER_GRADIENTS = [
+  "from-pink-500/30 to-purple-600/30",
+  "from-violet-500/30 to-indigo-600/30",
+  "from-fuchsia-500/30 to-pink-600/30",
+  "from-blue-500/30 to-cyan-600/30",
+  "from-purple-500/30 to-blue-600/30",
+  "from-rose-500/30 to-orange-500/30",
+];
+
+function brandGradient(brand: string): string {
+  let hash = 0;
+  for (let i = 0; i < brand.length; i++) {
+    hash = (hash * 31 + brand.charCodeAt(i)) | 0;
+  }
+  return PLACEHOLDER_GRADIENTS[Math.abs(hash) % PLACEHOLDER_GRADIENTS.length];
 }
 
 /**
@@ -14,7 +36,7 @@ interface PhonePhotoUploaderProps {
  * yoki o'chirish. Fayl tanlangan zahoti avtomatik yuklanadi (qo'shimcha
  * "Saqlash" tugmasi shart emas — tezroq va soddaroq).
  */
-export function PhonePhotoUploader({ phoneId, photoUrl }: PhonePhotoUploaderProps) {
+export function PhonePhotoUploader({ phoneId, photoUrl, brand, model }: PhonePhotoUploaderProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -84,8 +106,23 @@ export function PhonePhotoUploader({ phoneId, photoUrl }: PhonePhotoUploaderProp
           className="h-full w-full object-cover"
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-4xl text-white/10">
-          📱
+        <div
+          className={`flex h-full w-full flex-col items-center justify-center gap-1.5 bg-gradient-to-br ${
+            brand ? brandGradient(brand) : "from-white/5 to-white/10"
+          }`}
+        >
+          {brand ? (
+            <>
+              <span className="text-3xl font-bold text-white/40">
+                {brand.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="max-w-[90%] truncate text-xs font-medium text-white/50">
+                {brand}{model ? ` ${model}` : ""}
+              </span>
+            </>
+          ) : (
+            <span className="text-4xl text-white/10">📱</span>
+          )}
         </div>
       )}
 

@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { formatAxisMoney } from "@/lib/currency";
 
 interface DailySeries {
   date: string;
@@ -48,23 +49,25 @@ function shortDate(iso: string) {
   return `${d.getDate().toString().padStart(2, "0")}.${(d.getMonth() + 1).toString().padStart(2, "0")}`;
 }
 
-function formatK(value: number) {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
-  return String(value);
-}
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
+  const hasLoss = payload.some(
+    (p: { name: string; value: number }) => p.name === "profit" && p.value < 0
+  );
   return (
-    <div className="rounded-xl border border-white/10 bg-[#1a0a2e] p-3 text-xs shadow-lg">
-      <p className="mb-1 font-semibold text-gray-300">{label}</p>
+    <div className="max-w-[220px] rounded-xl border border-white/10 bg-[#1a0a2e] p-3 text-xs shadow-lg">
+      <p className="mb-1 font-semibold text-gray-300">{shortDate(String(label))}</p>
       {payload.map((p: { name: string; value: number; color: string }, i: number) => (
-        <p key={i} style={{ color: p.color }}>
-          {p.name}: {p.value.toLocaleString()} so&apos;m
+        <p key={i} style={{ color: p.name === "profit" && p.value < 0 ? "#f87171" : p.color }}>
+          {p.name === "revenue" ? "Daromad" : "Foyda"}: {p.value.toLocaleString()} so&apos;m
         </p>
       ))}
+      {hasLoss && (
+        <p className="mt-1.5 border-t border-white/10 pt-1.5 text-[11px] leading-snug text-red-300/80">
+          ⚠️ Bu kunda telefon(lar) kelgan narxidan arzon sotilgan
+        </p>
+      )}
     </div>
   );
 }
@@ -118,11 +121,11 @@ export function DashboardCharts({ dailySeries, topModels, conditionStats }: Dash
                 tickLine={false}
               />
               <YAxis
-                tickFormatter={formatK}
+                tickFormatter={formatAxisMoney}
                 tick={{ fill: "#6b7280", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                width={45}
+                width={52}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend

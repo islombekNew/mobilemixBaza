@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma";
 import { assertBranchAccess, assertOwner, type SessionUser } from "@/lib/access-control";
 import type { CustomerStatus, Prisma } from "@prisma/client";
 import { notifyNewOverdueCustomers } from "@/lib/telegram-notify";
+import { getUsdRate } from "@/lib/exchange-rate";
+import { toUZS } from "@/lib/currency";
 
 export interface CustomerFilters {
   search?: string; // ism yoki telefon raqami bo'yicha
@@ -162,6 +164,7 @@ export async function syncOverdueStatuses(user: SessionUser, branchId: string) {
       phoneNumber: true,
       totalAmount: true,
       paidAmount: true,
+      currency: true,
       dueDate: true,
       sale: { select: { branch: { select: { name: true } } } },
     },
@@ -182,6 +185,7 @@ export async function syncOverdueStatuses(user: SessionUser, branchId: string) {
       fullName: c.fullName,
       phoneNumber: c.phoneNumber,
       remainingDebt: Number(c.totalAmount) - Number(c.paidAmount),
+      currency: c.currency,
       dueDate: c.dueDate,
       branchName: c.sale.branch.name,
     }))
@@ -199,13 +203,16 @@ export async function getDebtSummary(user: SessionUser, branchId: string) {
       sale: { branchId },
       status: { in: ["ACTIVE", "OVERDUE"] },
     },
-    select: { totalAmount: true, paidAmount: true, status: true },
+    select: { totalAmount: true, paidAmount: true, currency: true, status: true },
   });
 
   type DebtRow = (typeof customers)[number];
 
+  // Aralash valyutadagi qarzlar umumiy summada so'mga o'girib qo'shiladi
+  const usdRate = await getUsdRate();
   const totalDebt = customers.reduce(
-    (sum: number, c: DebtRow) => sum + (Number(c.totalAmount) - Number(c.paidAmount)),
+    (sum: number, c: DebtRow) =>
+      sum + toUZS(Number(c.totalAmount) - Number(c.paidAmount), c.currency, usdRate),
     0
   );
   const overdueCount = customers.filter(
@@ -224,6 +231,36 @@ export async function getAllOverdueCustomers(user: SessionUser) {
 
   return prisma.customer.findMany({
     where: { status: "OVERDUE" },
+    orderBy: { dueDate: "asc" },
+    include: {
+      sale: { include: { branch: { select: { name: true } } } },
+    },
+  });
+}
+
+/**
+ * To'lov muddati BUGUN kelgan (hali o'tmagan) faol qarzdorlar — barcha
+ * filiallar bo'yicha. Har kuni ertalab admin(lar)ga Telegram eslatmasi
+ * yuborish uchun (api/cron/check-overdue).
+ */
+export async function getDueTodayCustomers(user: SessionUser) {
+  assertOwner(user);
+
+  // Toshkent vaqti bo'yicha bugungi kun chegaralari
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tashkent",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const dayStart = new Date(`${parts}T00:00:00+05:00`);
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
+  return prisma.customer.findMany({
+    where: {
+      status: "ACTIVE",
+      dueDate: { gte: dayStart, lt: dayEnd },
+    },
     orderBy: { dueDate: "asc" },
     include: {
       sale: { include: { branch: { select: { name: true } } } },

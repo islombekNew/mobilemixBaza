@@ -3,6 +3,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 export interface ReceiptSaleData {
   id: string;
   finalPrice: number;
+  currency?: "UZS" | "USD";
   paymentType: "CASH" | "CARD" | "CREDIT";
   saleDate: Date;
   phone: { model: string; brand: string; imei: string; color: string; storageGB: number };
@@ -23,7 +24,10 @@ const paymentTypeLabels: Record<ReceiptSaleData["paymentType"], string> = {
   CREDIT: "Kredit (bo'lib to'lash)",
 };
 
-function formatSum(value: number): string {
+function formatSum(value: number, currency: "UZS" | "USD" = "UZS"): string {
+  if (currency === "USD") {
+    return `$${(Math.round(value * 100) / 100).toLocaleString("en-US")}`;
+  }
   return `${Math.round(value).toLocaleString("uz-UZ").replace(/,/g, " ")} so'm`;
 }
 
@@ -114,8 +118,9 @@ export async function generateReceiptPdf(sale: ReceiptSaleData): Promise<Uint8Ar
   drawDivider();
 
   // --- To'lov ---
+  const cur = sale.currency ?? "UZS";
   drawRow("To'lov turi:", paymentTypeLabels[sale.paymentType]);
-  drawRow("Jami summa:", formatSum(sale.finalPrice), { bold: true });
+  drawRow("Jami summa:", formatSum(sale.finalPrice, cur), { bold: true });
 
   // --- Kredit bo'lsa, qo'shimcha ma'lumot ---
   if (sale.customer) {
@@ -124,8 +129,8 @@ export async function generateReceiptPdf(sale: ReceiptSaleData): Promise<Uint8Ar
     drawCenteredText("Bo'lib to'lash ma'lumotlari", 9.5, fontBold, textGray);
     drawRow("Mijoz:", sale.customer.fullName);
     drawRow("Telefon:", sale.customer.phoneNumber);
-    drawRow("Boshlang'ich to'lov:", formatSum(sale.customer.paidAmount));
-    drawRow("Qolgan qarz:", formatSum(remaining), { bold: true });
+    drawRow("Boshlang'ich to'lov:", formatSum(sale.customer.paidAmount, cur));
+    drawRow("Qolgan qarz:", formatSum(remaining, cur), { bold: true });
     drawRow("To'lov muddati:", formatDate(sale.customer.dueDate));
   }
 

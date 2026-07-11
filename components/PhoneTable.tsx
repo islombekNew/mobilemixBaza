@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { PhonePhotoUploader } from "@/components/PhonePhotoUploader";
 import { TransferPhoneButton } from "@/components/TransferPhoneButton";
 import { EditPhoneModal } from "@/components/EditPhoneModal";
+import { formatMoney, type CurrencyCode } from "@/lib/currency";
 
 const PAGE_SIZE = 20;
 
@@ -20,6 +21,7 @@ interface PhoneRow {
   condition: string;
   costPrice: string | number | null;
   salePrice: string | number;
+  currency?: string;
   status: string;
   photoUrl: string | null;
   branchId: string;
@@ -41,6 +43,8 @@ interface PhoneTableProps {
   phones: PhoneRow[];
   branches?: BranchOption[];
   isOwner?: boolean;
+  /** Joriy USD/UZS kursi — ikkinchi valyutani qavsda ko'rsatish uchun */
+  usdRate?: number;
 }
 
 const conditionLabels: Record<string, string> = {
@@ -49,9 +53,8 @@ const conditionLabels: Record<string, string> = {
   REFURBISHED: "Qayta tiklangan",
 };
 
-function formatSum(value: string | number | null) {
-  if (value === null) return "—";
-  return Number(value).toLocaleString("uz-UZ") + " so'm";
+function phoneCurrency(phone: { currency?: string }): CurrencyCode {
+  return phone.currency === "USD" ? "USD" : "UZS";
 }
 
 /**
@@ -61,7 +64,7 @@ function formatSum(value: string | number | null) {
  * status va amallarni (rasm qo'shish, filialga ko'chirish, o'chirish) o'z
  * ichiga oladi.
  */
-export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTableProps) {
+export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0 }: PhoneTableProps) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editPhone, setEditPhone] = useState<PhoneRow | null>(null);
@@ -114,9 +117,19 @@ export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTabl
         {paged.map((phone) => (
           <div
             key={phone.id}
-            className="overflow-hidden rounded-xl border border-white/10 bg-white/5"
+            className={clsx(
+              "overflow-hidden rounded-xl border bg-white/5 transition",
+              phone.status === "SOLD"
+                ? "border-white/5 opacity-50 saturate-50"
+                : "border-white/10"
+            )}
           >
-            <PhonePhotoUploader phoneId={phone.id} photoUrl={phone.photoUrl} />
+            <PhonePhotoUploader
+              phoneId={phone.id}
+              photoUrl={phone.photoUrl}
+              brand={phone.brand}
+              model={phone.model}
+            />
 
             <div className="space-y-2 p-4">
               <div className="flex items-start justify-between gap-2">
@@ -145,13 +158,24 @@ export function PhoneTable({ phones, branches = [], isOwner = false }: PhoneTabl
 
               <div className="font-mono text-xs text-gray-500">{phone.imei}</div>
 
-              <div className="flex items-baseline justify-between border-t border-white/10 pt-2">
+              <div className="space-y-0.5 border-t border-white/10 pt-2">
                 <div className="text-xs text-gray-500">
-                  Tan narxi: {formatSum(phone.costPrice)}
+                  Tan narxi:{" "}
+                  {phone.costPrice === null
+                    ? "—"
+                    : formatMoney(Number(phone.costPrice), phoneCurrency(phone))}
                 </div>
                 <div className="font-semibold text-white">
-                  {formatSum(phone.salePrice)}
+                  {formatMoney(Number(phone.salePrice), phoneCurrency(phone))}
                 </div>
+                {usdRate > 0 && (
+                  <div className="text-xs text-gray-500">
+                    ≈{" "}
+                    {phoneCurrency(phone) === "USD"
+                      ? formatMoney(Number(phone.salePrice) * usdRate, "UZS")
+                      : formatMoney(Number(phone.salePrice) / usdRate, "USD")}
+                  </div>
+                )}
               </div>
 
               {/* Komplektatsiya */}

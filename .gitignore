@@ -26,3 +26,6 @@ npm-debug.log*
 
 # prisma
 prisma/dev.db
+
+# Claude Code (mashina-maxsus: launch.json absolut yo'l, local settings)
+.claude/

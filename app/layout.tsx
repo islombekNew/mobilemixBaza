@@ -12,8 +12,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="uz">
-      <body className="min-h-screen antialiased">{children}</body>
+    // suppressHydrationWarning: ba'zi brauzer kengaytmalari (masalan
+    // LanguageTool — `data-lt-installed`, Grammarly va h.k.) React yuklanishidan
+    // OLDIN <html>/<body> tegiga atribut qo'shadi. Bu server va client HTML'ini
+    // farqlantiradi va konsolda hydration ogohlantirishi chiqadi. Bu bizning
+    // kodimiz xatosi emas, shu sababli ogohlantirish shu tegda bostiriladi.
+    <html lang="uz" suppressHydrationWarning>
+      <body className="min-h-screen antialiased" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

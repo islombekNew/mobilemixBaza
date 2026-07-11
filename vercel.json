@@ -1,6 +1,7 @@
 {
   "crons": [
-    { "path": "/api/cron/check-overdue", "schedule": "0 9 * * *" },
-    { "path": "/api/cron/daily-report", "schedule": "0 20 * * *" }
+    { "path": "/api/cron/check-overdue", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/daily-report", "schedule": "0 20 * * *" },
+    { "path": "/api/cron/archive-sold", "schedule": "10 0 1 * *" }
   ]
 }

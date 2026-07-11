@@ -50,8 +50,8 @@ export function EditBranchButton({ branch }: EditBranchButtonProps) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#1a0a2e] p-6">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
+          <div className="max-h-[92vh] w-full max-w-sm overflow-y-auto rounded-t-2xl border border-white/10 bg-[#1a0a2e] p-6 sm:rounded-2xl">
             <h2 className="mb-4 text-lg font-semibold text-white">Filialni tahrirlash</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>

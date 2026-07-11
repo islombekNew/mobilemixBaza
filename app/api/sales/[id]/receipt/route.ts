@@ -17,6 +17,7 @@ export async function GET(
     const pdfBytes = await generateReceiptPdf({
       id: sale.id,
       finalPrice: Number(sale.finalPrice),
+      currency: sale.currency,
       paymentType: sale.paymentType,
       saleDate: sale.saleDate,
       phone: sale.phone,

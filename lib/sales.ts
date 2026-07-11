@@ -1,13 +1,22 @@
 import prisma from "@/lib/prisma";
 import { assertBranchAccess, type SessionUser } from "@/lib/access-control";
-import type { PaymentType, PaymentPlan, Prisma } from "@prisma/client";
-import { notifyCreditSale } from "@/lib/telegram-notify";
+import type { Currency, PaymentType, PaymentPlan, Prisma } from "@prisma/client";
+import { notifyCreditSale, notifySecurityEvent } from "@/lib/telegram-notify";
+import { maybePostSoldBatch } from "@/lib/telegram-channel";
 
 export interface CreateSaleInput {
   phoneId: string;
   branchId: string;
   paymentType: PaymentType;
   finalPrice: number;
+  // finalPrice qaysi valyutada kiritilgani ($ yoki so'm)
+  currency?: Currency;
+  /**
+   * Sotuvni kim amalga oshirgani. Faqat OWNER boshqa xodimni tanlay oladi
+   * (masalan, o'zi kirib turib sotuvchi nomidan yozish uchun); SELLER doim
+   * o'zi nomidan sotadi — bu maydon e'tiborga olinmaydi.
+   */
+  sellerId?: string;
   // Faqat paymentType === "CREDIT" bo'lganda kerak (PRD 3.5, 3.6)
   customer?: {
     fullName: string;
@@ -52,6 +61,19 @@ export async function createSale(user: SessionUser, input: CreateSaleInput) {
     throw new Error("Bu telefon allaqachon sotilgan");
   }
 
+  // Sotuvchini aniqlash: OWNER boshqa xodimni tanlay oladi, SELLER — faqat o'zi
+  let sellerId = user.id;
+  if (user.role === "OWNER" && input.sellerId && input.sellerId !== user.id) {
+    const chosen = await prisma.user.findUnique({ where: { id: input.sellerId } });
+    if (!chosen || chosen.deletedAt) {
+      throw new Error("Tanlangan sotuvchi topilmadi yoki bloklangan");
+    }
+    if (chosen.role === "SELLER" && chosen.branchId !== input.branchId) {
+      throw new Error("Tanlangan sotuvchi bu filialga tegishli emas");
+    }
+    sellerId = chosen.id;
+  }
+
   const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // 1. Telefon holatini tranzaksiya ICHIDA qayta tekshirish (race condition
     //    himoyasi: ikki so'rov bir vaqtda kelsa, ikkinchisi shu yerda to'xtaydi,
@@ -71,9 +93,10 @@ export async function createSale(user: SessionUser, input: CreateSaleInput) {
     const sale = await tx.sale.create({
       data: {
         phoneId: input.phoneId,
-        sellerId: user.id,
+        sellerId,
         branchId: input.branchId,
         finalPrice: input.finalPrice,
+        currency: input.currency ?? "UZS",
         paymentType: input.paymentType,
       },
     });
@@ -83,7 +106,7 @@ export async function createSale(user: SessionUser, input: CreateSaleInput) {
     // freshPhone allaqachon yuklangan, qo'shimcha so'rov arzon.
     const [branchInfo, sellerInfo] = await Promise.all([
       tx.branch.findUnique({ where: { id: input.branchId }, select: { name: true } }),
-      tx.user.findUnique({ where: { id: user.id }, select: { name: true } }),
+      tx.user.findUnique({ where: { id: sellerId }, select: { name: true } }),
     ]);
 
     // 4. Agar kredit bo'lsa — mijoz yozuvi (PRD 3.6: "faqat kreditga sotuv bo'lganda yaratiladi")
@@ -98,6 +121,8 @@ export async function createSale(user: SessionUser, input: CreateSaleInput) {
           phoneNumber: input.customer.phoneNumber,
           totalAmount: input.customer.totalAmount,
           paidAmount: input.customer.paidAmount,
+          // Qarz sotuv valyutasida yuritiladi
+          currency: input.currency ?? "UZS",
           dueDate: new Date(input.customer.dueDate),
           paymentPlan: input.customer.paymentPlan,
           status,
@@ -117,6 +142,7 @@ export async function createSale(user: SessionUser, input: CreateSaleInput) {
           phoneId: input.phoneId,
           paymentType: input.paymentType,
           finalPrice: input.finalPrice,
+          sellerId,
         },
       },
     });
@@ -143,6 +169,7 @@ export async function createSale(user: SessionUser, input: CreateSaleInput) {
       phoneModel: result.notifyInfo.phoneModel,
       totalAmount: Number(result.customer.totalAmount),
       initialPayment: Number(result.customer.paidAmount),
+      currency: result.customer.currency,
       dueDate: result.customer.dueDate,
       branchName: result.notifyInfo.branchName,
       sellerName: result.notifyInfo.sellerName,
@@ -150,6 +177,10 @@ export async function createSale(user: SessionUser, input: CreateSaleInput) {
       console.error("[sales] Kredit sotuv bildirishnomasi xatosi:", error)
     );
   }
+
+  // Har 5 sotuvda do'kon kanaliga avtomatik "sotildi" posti (5.2) —
+  // tranzaksiya tashqarisida, xato bo'lsa sotuvga ta'sir qilmaydi.
+  void maybePostSoldBatch();
 
   return { sale: result.sale, customer: result.customer };
 }
@@ -182,8 +213,86 @@ export async function listSales(user: SessionUser, branchId: string) {
     orderBy: { saleDate: "desc" },
     include: {
       phone: { select: { model: true, brand: true, imei: true } },
-      seller: { select: { name: true } },
+      seller: { select: { id: true, name: true } },
       customer: { select: { fullName: true, status: true } },
     },
   });
+}
+
+/**
+ * Sotuvni QAYTARISH (bekor qilish):
+ *  - telefon omborga qaytadi (status IN_STOCK, arxivdan chiqadi);
+ *  - sotuv yozuvi O'CHIRILMAYDI — returnedAt bilan belgilanadi (tarix
+ *    va audit uchun), lekin barcha hisobotlardan chiqariladi;
+ *  - kredit sotuv bo'lsa, mijoz qarzi CANCELLED holatiga o'tadi
+ *    (to'lov tarixi saqlanadi — pul qaytarish do'kon ichida hal qilinadi).
+ */
+export async function returnSale(
+  user: SessionUser,
+  saleId: string,
+  reason?: string
+) {
+  const sale = await prisma.sale.findUnique({
+    where: { id: saleId },
+    include: {
+      phone: { select: { id: true, brand: true, model: true, imei: true } },
+      customer: { select: { id: true, status: true } },
+    },
+  });
+  if (!sale) throw new Error("Sotuv topilmadi");
+
+  assertBranchAccess(user, sale.branchId);
+
+  if (sale.returnedAt) {
+    throw new Error("Bu sotuv allaqachon qaytarilgan");
+  }
+
+  const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const returned = await tx.sale.update({
+      where: { id: saleId },
+      data: { returnedAt: new Date(), returnReason: reason?.trim() || null },
+    });
+
+    // Telefon omborga qaytadi — yana sotish mumkin bo'ladi
+    await tx.phone.update({
+      where: { id: sale.phone.id },
+      data: { status: "IN_STOCK", archivedAt: null },
+    });
+
+    // Kredit qarzi bekor qilinadi (to'lov tarixi o'chirilmaydi)
+    if (sale.customer && sale.customer.status !== "CANCELLED") {
+      await tx.customer.update({
+        where: { id: sale.customer.id },
+        data: { status: "CANCELLED" },
+      });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        action: "SALE_RETURNED",
+        userId: user.id,
+        branchId: sale.branchId,
+        details: {
+          saleId,
+          phoneId: sale.phone.id,
+          imei: sale.phone.imei,
+          model: `${sale.phone.brand} ${sale.phone.model}`,
+          reason: reason?.trim() || null,
+        },
+      },
+    });
+
+    return returned;
+  });
+
+  // Qaytarish muhim moliyaviy amal — admin darhol xabardor bo'ladi
+  void notifySecurityEvent("Sotuv qaytarildi", [
+    `Model: ${sale.phone.brand} ${sale.phone.model}`,
+    `IMEI: ${sale.phone.imei}`,
+    ...(reason?.trim() ? [`Sabab: ${reason.trim()}`] : []),
+  ]).catch((error: unknown) =>
+    console.error("[sales] Qaytarish bildirishnomasi xatosi:", error)
+  );
+
+  return updated;
 }

@@ -4,7 +4,8 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { useState } from "react";
 import clsx from "clsx";
 import { AddPaymentForm } from "@/components/AddPaymentForm";
-import { formatDate, formatSum } from "@/lib/format";
+import { formatDate } from "@/lib/format";
+import { formatMoney, type CurrencyCode } from "@/lib/currency";
 
 interface Payment {
   id: string;
@@ -19,6 +20,7 @@ interface CustomerRow {
   phoneNumber: string;
   totalAmount: Decimal | number;
   paidAmount: Decimal | number;
+  currency?: string;
   dueDate: string | Date;
   paymentPlan: string;
   status: string;
@@ -58,6 +60,7 @@ export function CustomerList({ customers }: CustomerListProps) {
     <div className="space-y-3">
       {customers.map((customer) => {
         const remaining = Number(customer.totalAmount) - Number(customer.paidAmount);
+        const cur: CurrencyCode = customer.currency === "USD" ? "USD" : "UZS";
         const isExpanded = expandedId === customer.id;
         const status = statusLabels[customer.status] ?? {
           label: customer.status,
@@ -92,9 +95,9 @@ export function CustomerList({ customers }: CustomerListProps) {
               </div>
 
               <div className="text-right">
-                <p className="font-medium text-white">{formatSum(Number(remaining))}</p>
+                <p className="font-medium text-white">{formatMoney(remaining, cur)}</p>
                 <p className="text-xs text-gray-500">
-                 qolgan / {formatSum(Number(customer.totalAmount))}
+                 qolgan / {formatMoney(Number(customer.totalAmount), cur)}
                 </p>
               </div>
             </button>
@@ -115,7 +118,7 @@ export function CustomerList({ customers }: CustomerListProps) {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">To&apos;langan</p>
-                    <p className="text-gray-200">{formatSum(Number(customer.paidAmount))}</p>
+                    <p className="text-gray-200">{formatMoney(Number(customer.paidAmount), cur)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">IMEI</p>
@@ -147,7 +150,7 @@ export function CustomerList({ customers }: CustomerListProps) {
                             )}
                           </span>
                           <span className="font-medium text-white">
-                            {formatSum(payment.amount)}
+                            {formatMoney(Number(payment.amount), cur)}
                           </span>
                         </div>
                       ))}
@@ -156,7 +159,7 @@ export function CustomerList({ customers }: CustomerListProps) {
                 </div>
 
                 {customer.status !== "PAID" && (
-                  <AddPaymentForm customerId={customer.id} maxAmount={remaining} />
+                  <AddPaymentForm customerId={customer.id} maxAmount={remaining} currency={cur} />
                 )}
               </div>
             )}

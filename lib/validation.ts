@@ -23,6 +23,9 @@ const nonNegativeNumber = z.coerce
   .finite("Raqam kiritilishi kerak")
   .min(0, "Manfiy son bo'lishi mumkin emas");
 
+// Narx valyutasi — $ yoki so'm. Ko'rsatilmasa so'm (eski xatti-harakat saqlanadi).
+const currencySchema = z.enum(["UZS", "USD"]);
+
 const warrantyMonthsSchema = z.coerce
   .number()
   .int()
@@ -38,6 +41,7 @@ export const phoneCreateSchema = z.object({
   condition: z.enum(["NEW", "USED", "REFURBISHED"]),
   costPrice: nonNegativeNumber,
   salePrice: positiveNumber,
+  currency: currencySchema.default("UZS"),
   branchId: z.string().min(1),
   ramGB: z.coerce.number().int().positive().optional().nullable(),
   batteryHealth: z.coerce.number().int().min(1).max(100).optional().nullable(),
@@ -56,6 +60,7 @@ export const phoneUpdateSchema = z.object({
   condition: z.enum(["NEW", "USED", "REFURBISHED"]).optional(),
   costPrice: nonNegativeNumber.optional(),
   salePrice: positiveNumber.optional(),
+  currency: currencySchema.optional(),
   ramGB: z.coerce.number().int().positive().optional().nullable(),
   batteryHealth: z.coerce.number().int().min(1).max(100).optional().nullable(),
   hasBox: z.coerce.boolean().optional(),
@@ -80,6 +85,9 @@ export const saleCreateSchema = z
     branchId: z.string().min(1),
     paymentType: z.enum(["CASH", "CARD", "CREDIT"]),
     finalPrice: positiveNumber,
+    currency: currencySchema.default("UZS"),
+    // Sotuvni kim amalga oshirgani — faqat OWNER boshqa xodimni tanlay oladi
+    sellerId: z.string().min(1).optional(),
     customer: saleCustomerSchema.optional(),
   })
   .superRefine((data, ctx) => {
@@ -99,6 +107,10 @@ export const saleCreateSchema = z
       });
     }
   });
+
+export const saleReturnSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+});
 
 export const debtPaymentCreateSchema = z.object({
   amount: positiveNumber,
@@ -120,8 +132,9 @@ export const userCreateSchema = z
       .trim()
       .min(3, "Login kamida 3 belgidan iborat bo'lishi kerak")
       .regex(
-        /^[a-zA-Z0-9_.-]+$/,
-        "Login faqat harf, raqam, '_', '.', '-' belgilaridan iborat bo'lishi kerak"
+        // "+998..." ko'rinishidagi telefon-login ham qabul qilinadi
+        /^\+?[a-zA-Z0-9_.-]+$/,
+        "Login faqat harf, raqam, '+', '_', '.', '-' belgilaridan iborat bo'lishi kerak"
       ),
     password: z.string().min(6, "Parol kamida 6 belgidan iborat bo'lishi kerak"),
     role: z.enum(["OWNER", "SELLER"]),
@@ -136,6 +149,32 @@ export const userCreateSchema = z
       });
     }
   });
+
+/**
+ * Xodimni tahrirlash: hamma maydon ixtiyoriy. Parol bo'sh string kelsa —
+ * "o'zgartirilmasin" deb tushuniladi (undefined'ga aylanadi).
+ */
+export const userUpdateSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  login: z
+    .string()
+    .trim()
+    .min(3, "Login kamida 3 belgidan iborat bo'lishi kerak")
+    .regex(
+      /^\+?[a-zA-Z0-9_.-]+$/,
+      "Login faqat harf, raqam, '+', '_', '.', '-' belgilaridan iborat bo'lishi kerak"
+    )
+    .optional(),
+  password: z
+    .string()
+    .transform((v) => (v === "" ? undefined : v))
+    .pipe(z.string().min(6, "Parol kamida 6 belgidan iborat bo'lishi kerak").optional())
+    .optional(),
+  role: z.enum(["OWNER", "SELLER"]).optional(),
+  branchId: z.string().nullable().optional(),
+  // Bloklash/blokdan chiqarish ham shu PATCH orqali
+  blocked: z.boolean().optional(),
+});
 
 export const phoneTransferSchema = z.object({
   targetBranchId: z.string().min(1, "Maqsad filial tanlanishi shart"),
@@ -160,6 +199,13 @@ export const phoneImportRowSchema = z.object({
     .pipe(z.enum(["NEW", "USED", "REFURBISHED"])),
   costPrice: nonNegativeNumber,
   salePrice: positiveNumber,
+  currency: z
+    .string()
+    .trim()
+    .transform((v) => v.toUpperCase())
+    .pipe(currencySchema)
+    .optional()
+    .default("UZS"),
 });
 
 export type PhoneImportRow = z.infer<typeof phoneImportRowSchema>;

@@ -1,5 +1,11 @@
 import prisma from "@/lib/prisma";
 import { assertBranchAccess, assertOwner, type SessionUser } from "@/lib/access-control";
+import { getUsdRate } from "@/lib/exchange-rate";
+import { toUZS } from "@/lib/currency";
+
+// Barcha hisobotlar YAGONA bazaviy valyutada — so'mda hisoblanadi.
+// $ da kiritilgan narxlar joriy CBU kursi orqali so'mga o'giriladi,
+// shunda aralash valyutali sotuvlarda ham foyda to'g'ri chiqadi.
 
 function startOfMonth(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -46,18 +52,20 @@ export async function getBranchDashboard(
 
   const monthStart = getPeriodStart(period);
 
-  const [inStockCount, inAddedThisMonth, salesThisMonth, inStockPhones] = await Promise.all([
+  const [usdRate, inStockCount, inAddedThisMonth, salesThisMonth, inStockPhones] = await Promise.all([
+    getUsdRate(),
     prisma.phone.count({ where: { branchId, status: "IN_STOCK" } }),
     prisma.phone.findMany({
       where: { branchId, createdAt: { gte: monthStart } },
-      select: { costPrice: true },
+      select: { costPrice: true, currency: true },
     }),
     prisma.sale.findMany({
-      where: { branchId, saleDate: { gte: monthStart } },
+      where: { branchId, saleDate: { gte: monthStart }, returnedAt: null },
       select: {
         finalPrice: true,
+        currency: true,
         saleDate: true,
-        phone: { select: { costPrice: true, model: true, brand: true } },
+        phone: { select: { costPrice: true, currency: true, model: true, brand: true } },
       },
     }),
     prisma.phone.findMany({
@@ -69,19 +77,23 @@ export async function getBranchDashboard(
   type AddedPhoneRow = (typeof inAddedThisMonth)[number];
   type SaleRow = (typeof salesThisMonth)[number];
 
+  const revenueUZS = (s: SaleRow) => toUZS(Number(s.finalPrice), s.currency, usdRate);
+  const profitUZS = (s: SaleRow) =>
+    revenueUZS(s) - toUZS(Number(s.phone.costPrice), s.phone.currency, usdRate);
+
   const incomingCount = inAddedThisMonth.length;
   const incomingCostTotal = inAddedThisMonth.reduce(
-    (sum: number, p: AddedPhoneRow) => sum + Number(p.costPrice),
+    (sum: number, p: AddedPhoneRow) => sum + toUZS(Number(p.costPrice), p.currency, usdRate),
     0
   );
 
   const soldCount = salesThisMonth.length;
   const soldRevenueTotal = salesThisMonth.reduce(
-    (sum: number, s: SaleRow) => sum + Number(s.finalPrice),
+    (sum: number, s: SaleRow) => sum + revenueUZS(s),
     0
   );
   const monthProfit = salesThisMonth.reduce(
-    (sum: number, s: SaleRow) => sum + (Number(s.finalPrice) - Number(s.phone.costPrice)),
+    (sum: number, s: SaleRow) => sum + profitUZS(s),
     0
   );
 
@@ -103,7 +115,7 @@ export async function getBranchDashboard(
   const dailyRevenue = new Map<string, number>();
   for (const sale of salesThisMonth) {
     const key = startOfDay(sale.saleDate).toISOString().slice(0, 10);
-    dailyRevenue.set(key, (dailyRevenue.get(key) ?? 0) + Number(sale.finalPrice));
+    dailyRevenue.set(key, (dailyRevenue.get(key) ?? 0) + revenueUZS(sale));
   }
   let bestDay: string | null = null;
   let bestDayRevenue = 0;
@@ -119,8 +131,8 @@ export async function getBranchDashboard(
   for (const sale of salesThisMonth) {
     const key = startOfDay(sale.saleDate).toISOString().slice(0, 10);
     const entry = dailyMap.get(key) ?? { revenue: 0, profit: 0, count: 0 };
-    entry.revenue += Number(sale.finalPrice);
-    entry.profit += Number(sale.finalPrice) - Number(sale.phone.costPrice);
+    entry.revenue += revenueUZS(sale);
+    entry.profit += profitUZS(sale);
     entry.count += 1;
     dailyMap.set(key, entry);
   }
@@ -141,7 +153,7 @@ export async function getBranchDashboard(
     const key = `${sale.phone.brand} ${sale.phone.model}`;
     const entry = modelMap.get(key) ?? { model: key, count: 0, revenue: 0 };
     entry.count += 1;
-    entry.revenue += Number(sale.finalPrice);
+    entry.revenue += revenueUZS(sale);
     modelMap.set(key, entry);
   }
   const topModels = Array.from(modelMap.values())
@@ -180,24 +192,28 @@ export async function getBranchDashboard(
 export async function getTopModels(user: SessionUser, branchId: string, limit = 5) {
   assertBranchAccess(user, branchId);
 
-  const sales = await prisma.sale.findMany({
-    where: { branchId },
-    select: { finalPrice: true, phone: { select: { model: true, brand: true } } },
-  });
+  const [usdRate, sales] = await Promise.all([
+    getUsdRate(),
+    prisma.sale.findMany({
+      where: { branchId, returnedAt: null },
+      select: { finalPrice: true, currency: true, phone: { select: { model: true, brand: true } } },
+    }),
+  ]);
 
   const grouped = new Map<string, { model: string; brand: string; count: number; revenue: number }>();
   for (const sale of sales) {
     const key = `${sale.phone.brand} ${sale.phone.model}`;
+    const revenue = toUZS(Number(sale.finalPrice), sale.currency, usdRate);
     const existing = grouped.get(key);
     if (existing) {
       existing.count += 1;
-      existing.revenue += Number(sale.finalPrice);
+      existing.revenue += revenue;
     } else {
       grouped.set(key, {
         model: sale.phone.model,
         brand: sale.phone.brand,
         count: 1,
-        revenue: Number(sale.finalPrice),
+        revenue,
       });
     }
   }
@@ -217,7 +233,10 @@ export async function compareBranches(user: SessionUser) {
   assertOwner(user);
 
   const monthStart = startOfMonth();
-  const branches = await prisma.branch.findMany({ orderBy: { createdAt: "asc" } });
+  const [usdRate, branches] = await Promise.all([
+    getUsdRate(),
+    prisma.branch.findMany({ orderBy: { createdAt: "asc" } }),
+  ]);
 
   type BranchRow = (typeof branches)[number];
 
@@ -226,20 +245,27 @@ export async function compareBranches(user: SessionUser) {
       const [inStockCount, sales] = await Promise.all([
         prisma.phone.count({ where: { branchId: branch.id, status: "IN_STOCK" } }),
         prisma.sale.findMany({
-          where: { branchId: branch.id, saleDate: { gte: monthStart } },
-          select: { finalPrice: true, phone: { select: { costPrice: true } } },
+          where: { branchId: branch.id, saleDate: { gte: monthStart }, returnedAt: null },
+          select: {
+            finalPrice: true,
+            currency: true,
+            phone: { select: { costPrice: true, currency: true } },
+          },
         }),
       ]);
 
       type CompareSaleRow = (typeof sales)[number];
 
       const revenue = sales.reduce(
-        (sum: number, s: CompareSaleRow) => sum + Number(s.finalPrice),
+        (sum: number, s: CompareSaleRow) =>
+          sum + toUZS(Number(s.finalPrice), s.currency, usdRate),
         0
       );
       const profit = sales.reduce(
         (sum: number, s: CompareSaleRow) =>
-          sum + (Number(s.finalPrice) - Number(s.phone.costPrice)),
+          sum +
+          toUZS(Number(s.finalPrice), s.currency, usdRate) -
+          toUZS(Number(s.phone.costPrice), s.phone.currency, usdRate),
         0
       );
 
@@ -266,7 +292,10 @@ export async function getDailySummaryAllBranches(user: SessionUser) {
   assertOwner(user);
 
   const dayStart = startOfDay();
-  const branches = await prisma.branch.findMany({ orderBy: { createdAt: "asc" } });
+  const [usdRate, branches] = await Promise.all([
+    getUsdRate(),
+    prisma.branch.findMany({ orderBy: { createdAt: "asc" } }),
+  ]);
 
   type DailyBranchRow = (typeof branches)[number];
 
@@ -275,20 +304,27 @@ export async function getDailySummaryAllBranches(user: SessionUser) {
       const [inStockCount, salesToday] = await Promise.all([
         prisma.phone.count({ where: { branchId: branch.id, status: "IN_STOCK" } }),
         prisma.sale.findMany({
-          where: { branchId: branch.id, saleDate: { gte: dayStart } },
-          select: { finalPrice: true, phone: { select: { costPrice: true } } },
+          where: { branchId: branch.id, saleDate: { gte: dayStart }, returnedAt: null },
+          select: {
+            finalPrice: true,
+            currency: true,
+            phone: { select: { costPrice: true, currency: true } },
+          },
         }),
       ]);
 
       type DailySaleRow = (typeof salesToday)[number];
 
       const revenueTotal = salesToday.reduce(
-        (sum: number, s: DailySaleRow) => sum + Number(s.finalPrice),
+        (sum: number, s: DailySaleRow) =>
+          sum + toUZS(Number(s.finalPrice), s.currency, usdRate),
         0
       );
       const profitTotal = salesToday.reduce(
         (sum: number, s: DailySaleRow) =>
-          sum + (Number(s.finalPrice) - Number(s.phone.costPrice)),
+          sum +
+          toUZS(Number(s.finalPrice), s.currency, usdRate) -
+          toUZS(Number(s.phone.costPrice), s.phone.currency, usdRate),
         0
       );
 
@@ -318,21 +354,27 @@ export async function getDailyRevenueSeries(
 
   const rangeStart = startOfDay(new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000));
 
-  const sales = await prisma.sale.findMany({
-    where: { branchId, saleDate: { gte: rangeStart } },
-    select: {
-      finalPrice: true,
-      saleDate: true,
-      phone: { select: { costPrice: true } },
-    },
-  });
+  const [usdRate, sales] = await Promise.all([
+    getUsdRate(),
+    prisma.sale.findMany({
+      where: { branchId, saleDate: { gte: rangeStart }, returnedAt: null },
+      select: {
+        finalPrice: true,
+        currency: true,
+        saleDate: true,
+        phone: { select: { costPrice: true, currency: true } },
+      },
+    }),
+  ]);
 
   const byDay = new Map<string, { revenue: number; profit: number }>();
   for (const sale of sales) {
     const key = startOfDay(sale.saleDate).toISOString().slice(0, 10);
     const entry = byDay.get(key) ?? { revenue: 0, profit: 0 };
-    entry.revenue += Number(sale.finalPrice);
-    entry.profit += Number(sale.finalPrice) - Number(sale.phone.costPrice);
+    const revenue = toUZS(Number(sale.finalPrice), sale.currency, usdRate);
+    const cost = toUZS(Number(sale.phone.costPrice), sale.phone.currency, usdRate);
+    entry.revenue += revenue;
+    entry.profit += revenue - cost;
     byDay.set(key, entry);
   }
 
@@ -356,14 +398,18 @@ export async function getSellerPerformance(user: SessionUser, branchId: string) 
 
   const monthStart = startOfMonth();
 
-  const sales = await prisma.sale.findMany({
-    where: { branchId, saleDate: { gte: monthStart } },
-    select: {
-      finalPrice: true,
-      seller: { select: { id: true, name: true } },
-      phone: { select: { costPrice: true } },
-    },
-  });
+  const [usdRate, sales] = await Promise.all([
+    getUsdRate(),
+    prisma.sale.findMany({
+      where: { branchId, saleDate: { gte: monthStart }, returnedAt: null },
+      select: {
+        finalPrice: true,
+        currency: true,
+        seller: { select: { id: true, name: true } },
+        phone: { select: { costPrice: true, currency: true } },
+      },
+    }),
+  ]);
 
   const grouped = new Map<
     string,
@@ -372,8 +418,9 @@ export async function getSellerPerformance(user: SessionUser, branchId: string) 
 
   for (const sale of sales) {
     const existing = grouped.get(sale.seller.id);
-    const revenue = Number(sale.finalPrice);
-    const profit = Number(sale.finalPrice) - Number(sale.phone.costPrice);
+    const revenue = toUZS(Number(sale.finalPrice), sale.currency, usdRate);
+    const profit =
+      revenue - toUZS(Number(sale.phone.costPrice), sale.phone.currency, usdRate);
 
     if (existing) {
       existing.count += 1;
@@ -396,27 +443,37 @@ export async function getSellerPerformance(user: SessionUser, branchId: string) 
 export async function getProfitReport(user: SessionUser, branchId: string) {
   assertBranchAccess(user, branchId);
 
-  const sales = await prisma.sale.findMany({
-    where: { branchId },
-    orderBy: { saleDate: "desc" },
-    select: {
-      id: true,
-      finalPrice: true,
-      saleDate: true,
-      phone: { select: { model: true, brand: true, costPrice: true } },
-    },
-  });
+  const [usdRate, sales] = await Promise.all([
+    getUsdRate(),
+    prisma.sale.findMany({
+      where: { branchId, returnedAt: null },
+      orderBy: { saleDate: "desc" },
+      select: {
+        id: true,
+        finalPrice: true,
+        currency: true,
+        saleDate: true,
+        phone: { select: { model: true, brand: true, costPrice: true, currency: true } },
+      },
+    }),
+  ]);
 
   type ProfitSaleRow = (typeof sales)[number];
 
-  const rows = sales.map((sale: ProfitSaleRow) => ({
-    id: sale.id,
-    model: `${sale.phone.brand} ${sale.phone.model}`,
-    saleDate: sale.saleDate,
-    salePrice: Number(sale.finalPrice),
-    costPrice: Number(sale.phone.costPrice),
-    profit: Number(sale.finalPrice) - Number(sale.phone.costPrice),
-  }));
+  // Jadval yagona valyutada (so'mda) ko'rsatiladi — aralash valyutali
+  // qatorlar ham taqqoslanadigan bo'lishi uchun.
+  const rows = sales.map((sale: ProfitSaleRow) => {
+    const salePrice = toUZS(Number(sale.finalPrice), sale.currency, usdRate);
+    const costPrice = toUZS(Number(sale.phone.costPrice), sale.phone.currency, usdRate);
+    return {
+      id: sale.id,
+      model: `${sale.phone.brand} ${sale.phone.model}`,
+      saleDate: sale.saleDate,
+      salePrice,
+      costPrice,
+      profit: salePrice - costPrice,
+    };
+  });
 
   type ProfitRow = (typeof rows)[number];
 

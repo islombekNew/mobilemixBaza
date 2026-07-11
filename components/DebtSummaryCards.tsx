@@ -6,8 +6,10 @@ interface DebtSummaryCardsProps {
   };
 }
 
+// totalDebt aralash valyutali qarzlarning so'mga o'girilgan yig'indisi
+// (lib/customers.ts: getDebtSummary) — shu sababli doim so'mda ko'rsatiladi.
 function formatSum(value: number) {
-  return value.toLocaleString("uz-UZ") + " so'm";
+  return Math.round(value).toLocaleString("uz-UZ") + " so'm";
 }
 
 export function DebtSummaryCards({ summary }: DebtSummaryCardsProps) {

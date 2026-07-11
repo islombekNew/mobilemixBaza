@@ -30,7 +30,7 @@ const rowSchema = z.object({
       const map: Record<string, string> = {
         yangi: "NEW", new: "NEW",
         ishlatilgan: "USED", used: "USED", "б/у": "USED",
-        "qayta tiklangan": "REFURBISHED", refurbished: "REFURBISHED", "qayta tiklangan": "REFURBISHED",
+        "qayta tiklangan": "REFURBISHED", refurbished: "REFURBISHED",
       };
       return map[v.toLowerCase()] ?? v.toUpperCase();
     })
@@ -39,6 +39,17 @@ const rowSchema = z.object({
     })),
   costPrice: z.coerce.number().min(0, "Tan narxi manfiy bo'lishi mumkin emas"),
   salePrice: z.coerce.number().positive("Sotuv narxi musbat son bo'lishi kerak"),
+  // Ixtiyoriy "valyuta" ustuni: "$", "usd", "dollar" → USD; qolgani so'm
+  currency: z
+    .string()
+    .trim()
+    .transform((v) => {
+      const val = v.toLowerCase();
+      return ["$", "usd", "dollar", "dollor"].includes(val) ? "USD" : "UZS";
+    })
+    .pipe(z.enum(["UZS", "USD"]))
+    .optional()
+    .default("UZS"),
   branch: z.string().trim().min(1, "Filial nomi kiritilishi shart"),
   ramGB: z.coerce.number().int().positive().optional().nullable(),
   warrantyMonths: z.coerce.number().int().min(0).default(0),
@@ -150,6 +161,7 @@ export async function POST(request: NextRequest) {
           condition: row.condition as PhoneCondition,
           costPrice: row.costPrice,
           salePrice: row.salePrice,
+          currency: row.currency,
           ramGB: row.ramGB ?? null,
           warrantyMonths: row.warrantyMonths,
           supplier: row.supplier ?? null,
@@ -172,6 +184,7 @@ export async function POST(request: NextRequest) {
           condition: row.condition as PhoneCondition,
           costPrice: row.costPrice,
           salePrice: row.salePrice,
+          currency: row.currency,
           ramGB: row.ramGB ?? null,
           warrantyMonths: row.warrantyMonths,
           supplier: row.supplier ?? null,

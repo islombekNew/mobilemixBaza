@@ -7,9 +7,11 @@ import { formatNumber, parseFormattedNumber } from "@/lib/format";
 interface AddPaymentFormProps {
   customerId: string;
   maxAmount: number;
+  /** Qarz valyutasi — to'lov ham shu valyutada kiritiladi */
+  currency?: "UZS" | "USD";
 }
 
-export function AddPaymentForm({ customerId, maxAmount }: AddPaymentFormProps) {
+export function AddPaymentForm({ customerId, maxAmount, currency = "UZS" }: AddPaymentFormProps) {
   const router = useRouter();
   const [amount, setAmount] = useState("");
   const [paymentType, setPaymentType] = useState<"CASH" | "CARD">("CASH");
@@ -85,7 +87,7 @@ export function AddPaymentForm({ customerId, maxAmount }: AddPaymentFormProps) {
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex-1 min-w-[120px]">
           <label className="mb-1 block text-xs text-gray-400">
-            Summa (maks: {formatNumber(maxAmount)} so&apos;m)
+            Summa (maks: {currency === "USD" ? `$${formatNumber(maxAmount)}` : `${formatNumber(maxAmount)} so'm`})
           </label>
           <input
             type="text"

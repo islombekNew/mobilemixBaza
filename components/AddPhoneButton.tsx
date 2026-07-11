@@ -30,6 +30,7 @@ const initialForm = {
   batteryHealth: "",
   costPrice: "",
   salePrice: "",
+  currency: "UZS" as "UZS" | "USD",
   hasBox: false,
   hasCharger: false,
   hasDocuments: false,
@@ -47,6 +48,8 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
   function update(field: keyof typeof initialForm, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
+
+  const currencyLabel = form.currency === "USD" ? "$" : "so'm";
 
   function handleNumberInput(field: "costPrice" | "salePrice", raw: string) {
     const digits = raw.replace(/\./g, "").replace(/\D/g, "");
@@ -180,10 +183,31 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
                 />
               )}
 
+              {/* Narx valyutasi */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-300">Narx valyutasi</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["UZS", "USD"] as const).map((cur) => (
+                    <button
+                      key={cur}
+                      type="button"
+                      onClick={() => update("currency", cur)}
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                        form.currency === cur
+                          ? "border-[#ff4fd8] bg-brand-gradient text-white"
+                          : "border-white/10 bg-black/30 text-gray-300 hover:bg-white/5"
+                      }`}
+                    >
+                      {cur === "UZS" ? "So'm" : "$ Dollar"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Tan narxi va Sotuv narxi */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-300">Tan narxi</label>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-300">Tan narxi ({currencyLabel})</label>
                   <input
                     type="text"
                     value={form.costPrice}
@@ -193,7 +217,7 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-300">Sotuv narxi</label>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-300">Sotuv narxi ({currencyLabel})</label>
                   <input
                     type="text"
                     value={form.salePrice}
@@ -208,7 +232,9 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
               {/* Avtomatik foyda hisoblash */}
               {profit !== null && (
                 <div className={`rounded-lg px-3 py-2 text-sm ${profit >= 0 ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-                  Foyda: <span className="font-semibold">{formatNumber(profit)} so&apos;m</span>
+                  Foyda: <span className="font-semibold">
+                    {form.currency === "USD" ? `$${formatNumber(profit)}` : `${formatNumber(profit)} so'm`}
+                  </span>
                 </div>
               )}
 

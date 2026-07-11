@@ -5,7 +5,7 @@ import {
   canViewCostPrice,
   type SessionUser,
 } from "@/lib/access-control";
-import type { PhoneCondition, PhoneStatus, Prisma } from "@prisma/client";
+import type { Currency, PhoneCondition, PhoneStatus, Prisma } from "@prisma/client";
 import { notifySecurityEvent } from "@/lib/telegram-notify";
 import { uploadPhonePhoto, deletePhonePhoto } from "@/lib/blob-storage";
 import type { PhoneImportRow } from "@/lib/validation";
@@ -17,6 +17,9 @@ export interface PhoneFilters {
   status?: PhoneStatus;
   minPrice?: number;
   maxPrice?: number;
+  // true — faqat arxivdagi (o'tgan oylarda sotilgan) telefonlar;
+  // aks holda arxivdagilar ko'rinmaydi
+  archived?: boolean;
 }
 
 /**
@@ -31,7 +34,11 @@ export async function listPhones(
 ) {
   assertBranchAccess(user, branchId);
 
-  const where: Prisma.PhoneWhereInput = { branchId, deletedAt: null };
+  const where: Prisma.PhoneWhereInput = {
+    branchId,
+    deletedAt: null,
+    archivedAt: filters.archived ? { not: null } : null,
+  };
 
   if (filters.search) {
     where.OR = [
@@ -71,6 +78,7 @@ export interface CreatePhoneInput {
   condition: PhoneCondition;
   costPrice: number;
   salePrice: number;
+  currency?: Currency;
   branchId: string;
   ramGB?: number | null;
   batteryHealth?: number | null;
@@ -106,6 +114,7 @@ export async function createPhone(user: SessionUser, input: CreatePhoneInput) {
       condition: input.condition,
       costPrice: input.costPrice,
       salePrice: input.salePrice,
+      currency: input.currency ?? "UZS",
       branchId: input.branchId,
       addedById: user.id,
       status: "IN_STOCK",
@@ -139,6 +148,7 @@ export interface UpdatePhoneInput {
   condition?: PhoneCondition;
   costPrice?: number;
   salePrice?: number;
+  currency?: Currency;
   ramGB?: number | null;
   batteryHealth?: number | null;
   hasBox?: boolean;
@@ -351,6 +361,38 @@ export async function transferPhone(
   return updated;
 }
 
+/**
+ * OYLIK ARXIVLASH: joriy oydan OLDIN sotilgan telefonlarni arxivga
+ * o'tkazadi (archivedAt to'ldiriladi). Hech narsa o'chirilmaydi —
+ * hisobotlar, foyda tarixi, audit log to'liq saqlanadi. Ombor ro'yxati
+ * esa har oy boshida "yangidek toza" ko'rinadi.
+ *
+ * Har oyning 1-kunida cron orqali chaqiriladi (api/cron/archive-sold),
+ * lekin xohlagan paytda qayta chaqirish ham xavfsiz (idempotent) —
+ * allaqachon arxivlanganlar qayta tegilmaydi.
+ */
+export async function archiveLastMonthSoldPhones(): Promise<number> {
+  // Toshkent vaqti bo'yicha joriy oyning 1-kuni
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tashkent",
+    year: "numeric",
+    month: "2-digit",
+  }).format(new Date());
+  const monthStart = new Date(`${parts}-01T00:00:00+05:00`);
+
+  const result = await prisma.phone.updateMany({
+    where: {
+      status: "SOLD",
+      deletedAt: null,
+      archivedAt: null,
+      sale: { saleDate: { lt: monthStart } },
+    },
+    data: { archivedAt: new Date() },
+  });
+
+  return result.count;
+}
+
 export interface ImportSummary {
   created: number;
   skipped: { row: number; reason: string }[];
@@ -396,6 +438,7 @@ export async function bulkImportPhones(
           condition: row.condition,
           costPrice: row.costPrice,
           salePrice: row.salePrice,
+          currency: row.currency ?? "UZS",
           branchId,
           addedById: user.id,
           status: "IN_STOCK",

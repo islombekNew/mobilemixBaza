@@ -15,6 +15,7 @@ interface EditPhoneModalProps {
     condition: string;
     costPrice: string | number | null;
     salePrice: string | number;
+    currency?: string;
     batteryHealth?: number | null;
     warrantyMonths?: number;
     supplier?: string | null;
@@ -47,6 +48,7 @@ export function EditPhoneModal({ phone, onClose }: EditPhoneModalProps) {
     condition: phone.condition,
     costPrice: phone.costPrice !== null ? formatNumber(Number(phone.costPrice)) : "",
     salePrice: formatNumber(Number(phone.salePrice)),
+    currency: (phone.currency === "USD" ? "USD" : "UZS") as "UZS" | "USD",
     batteryHealth: phone.batteryHealth ? String(phone.batteryHealth) : "",
     warrantyMonths: String(phone.warrantyMonths ?? 0),
     supplier: phone.supplier ?? "",
@@ -86,6 +88,7 @@ export function EditPhoneModal({ phone, onClose }: EditPhoneModalProps) {
         condition: form.condition,
         costPrice: Number(parseFormattedNumber(form.costPrice)),
         salePrice: Number(parseFormattedNumber(form.salePrice)),
+        currency: form.currency,
         batteryHealth: form.batteryHealth ? Number(form.batteryHealth) : null,
         warrantyMonths: Number(form.warrantyMonths),
         supplier: form.supplier || null,
@@ -150,15 +153,35 @@ export function EditPhoneModal({ phone, onClose }: EditPhoneModalProps) {
               onChange={(v) => setForm(p => ({ ...p, batteryHealth: v }))} type="number" min={1} max={100} placeholder="85" />
           )}
 
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-300">Narx valyutasi</label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["UZS", "USD"] as const).map((cur) => (
+                <button
+                  key={cur}
+                  type="button"
+                  onClick={() => setForm(p => ({ ...p, currency: cur }))}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    form.currency === cur
+                      ? "border-[#ff4fd8] bg-brand-gradient text-white"
+                      : "border-white/10 bg-black/30 text-gray-300 hover:bg-white/5"
+                  }`}
+                >
+                  {cur === "UZS" ? "So'm" : "$ Dollar"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-300">Tan narxi</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-300">Tan narxi ({form.currency === "USD" ? "$" : "so'm"})</label>
               <input type="text" value={form.costPrice} onChange={(e) => handleNumberInput("costPrice", e.target.value)}
                 className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
                 placeholder="0" />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-300">Sotuv narxi</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-300">Sotuv narxi ({form.currency === "USD" ? "$" : "so'm"})</label>
               <input type="text" value={form.salePrice} onChange={(e) => handleNumberInput("salePrice", e.target.value)}
                 className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
                 placeholder="0" required />
@@ -167,7 +190,9 @@ export function EditPhoneModal({ phone, onClose }: EditPhoneModalProps) {
 
           {profit !== null && (
             <div className={`rounded-lg px-3 py-2 text-sm ${profit >= 0 ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-              Foyda: <span className="font-semibold">{formatNumber(profit)} so&apos;m</span>
+              Foyda: <span className="font-semibold">
+                {form.currency === "USD" ? `$${formatNumber(profit)}` : `${formatNumber(profit)} so'm`}
+              </span>
             </div>
           )}
 

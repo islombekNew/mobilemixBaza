@@ -1,13 +1,30 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { loginAction, type LoginResult } from "./actions";
 import { MixMobileLogo } from "@/components/MixMobileLogo";
+import { PasswordInput } from "@/components/PasswordInput";
+import { looksLikePhone } from "@/lib/login-format";
 
 const initialState: LoginResult = {};
 
 export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
+  const [login, setLogin] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Telefon raqami kiritilsa "+998" avtomatik qo'yiladi; matnli login
+  // (masalan "namangan_sotuvchi") esa o'zgarmasdan qoladi.
+  function handleLoginChange(value: string) {
+    if (looksLikePhone(value)) {
+      let digits = value.replace(/\D/g, "");
+      if (digits.startsWith("998")) digits = digits.slice(3);
+      digits = digits.slice(0, 9);
+      setLogin(digits ? `+998${digits}` : "");
+    } else {
+      setLogin(value);
+    }
+  }
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
@@ -44,10 +61,13 @@ export default function LoginPage() {
               id="login"
               name="login"
               type="text"
+              inputMode="tel"
               autoComplete="username"
               required
+              value={login}
+              onChange={(e) => handleLoginChange(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 outline-none transition focus:border-[#ff4fd8] focus:ring-1 focus:ring-[#ff4fd8]/50"
-              placeholder="login yoki telefon raqami"
+              placeholder="+998 88 216 28 82"
             />
           </div>
 
@@ -58,14 +78,13 @@ export default function LoginPage() {
             >
               Parol
             </label>
-            <input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
+              value={password}
+              onChange={setPassword}
               autoComplete="current-password"
               required
-              className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 outline-none transition focus:border-[#ff4fd8] focus:ring-1 focus:ring-[#ff4fd8]/50"
-              placeholder="••••••••"
             />
           </div>
 
