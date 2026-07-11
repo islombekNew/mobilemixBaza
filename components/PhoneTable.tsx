@@ -7,6 +7,8 @@ import { PhonePhotoUploader } from "@/components/PhonePhotoUploader";
 import { TransferPhoneButton } from "@/components/TransferPhoneButton";
 import { EditPhoneModal } from "@/components/EditPhoneModal";
 import { formatMoney, type CurrencyCode } from "@/lib/currency";
+import { useT } from "@/lib/i18n/client";
+import { conditionLabel } from "@/lib/i18n/dictionaries";
 
 const PAGE_SIZE = 20;
 
@@ -47,12 +49,6 @@ interface PhoneTableProps {
   usdRate?: number;
 }
 
-const conditionLabels: Record<string, string> = {
-  NEW: "Yangi",
-  USED: "Ishlatilgan",
-  REFURBISHED: "Qayta tiklangan",
-};
-
 function phoneCurrency(phone: { currency?: string }): CurrencyCode {
   return phone.currency === "USD" ? "USD" : "UZS";
 }
@@ -66,6 +62,7 @@ function phoneCurrency(phone: { currency?: string }): CurrencyCode {
  */
 export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0 }: PhoneTableProps) {
   const router = useRouter();
+  const t = useT();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editPhone, setEditPhone] = useState<PhoneRow | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +72,7 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
   const paged = phones.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   async function handleDelete(id: string) {
-    if (!confirm("Bu telefonni o'chirishni tasdiqlaysizmi?")) return;
+    if (!confirm(t.inventory.deleteConfirm)) return;
 
     setDeletingId(id);
     setError(null);
@@ -83,11 +80,11 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
       const res = await fetch(`/api/phones/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error ?? "O'chirishda xatolik");
+        throw new Error(data.error ?? t.common.error);
       }
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setDeletingId(null);
     }
@@ -96,7 +93,7 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
   if (phones.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center text-gray-400">
-        Bu filialda hali telefon yo&apos;q
+        {t.inventory.empty}
       </div>
     );
   }
@@ -145,14 +142,14 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
                       : "bg-gray-500/15 text-gray-400"
                   )}
                 >
-                  {phone.status === "IN_STOCK" ? "Omborda" : "Sotilgan"}
+                  {phone.status === "IN_STOCK" ? t.inventory.inStockBadge : t.inventory.soldBadge}
                 </span>
               </div>
 
               <div className="text-sm text-gray-300">
                 {phone.color},{" "}
                 {phone.ramGB ? `${phone.ramGB}/${phone.storageGB}GB` : `${phone.storageGB}GB`}
-                {" "}· {conditionLabels[phone.condition] ?? phone.condition}
+                {" "}· {conditionLabel(phone.condition, t)}
                 {phone.batteryHealth ? ` · 🔋${phone.batteryHealth}%` : ""}
               </div>
 
@@ -160,7 +157,7 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
 
               <div className="space-y-0.5 border-t border-white/10 pt-2">
                 <div className="text-xs text-gray-500">
-                  Tan narxi:{" "}
+                  {t.inventory.costPrice}:{" "}
                   {phone.costPrice === null
                     ? "—"
                     : formatMoney(Number(phone.costPrice), phoneCurrency(phone))}
@@ -181,23 +178,23 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
               {/* Komplektatsiya */}
               {(phone.hasBox || phone.hasCharger || phone.hasDocuments) && (
                 <div className="flex flex-wrap gap-1">
-                  {phone.hasBox && <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">📦 Karobka</span>}
-                  {phone.hasCharger && <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">🔌 Zaryadchik</span>}
-                  {phone.hasDocuments && <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">📄 Hujjat</span>}
+                  {phone.hasBox && <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">📦 {t.phoneForm.hasBox}</span>}
+                  {phone.hasCharger && <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">🔌 {t.phoneForm.hasCharger}</span>}
+                  {phone.hasDocuments && <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">📄 {t.phoneForm.hasDocs}</span>}
                 </div>
               )}
 
               {/* Kafolat va Yetkazib beruvchi */}
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
                 {phone.warrantyMonths ? (
-                  <span>🛡 {phone.warrantyMonths >= 12 ? `${phone.warrantyMonths / 12} yil` : `${phone.warrantyMonths} oy`} kafolat</span>
+                  <span>🛡 {phone.warrantyMonths >= 12 ? `${phone.warrantyMonths / 12} ${t.inventory.year}` : `${phone.warrantyMonths} ${t.inventory.months}`} {t.inventory.warranty}</span>
                 ) : (
-                  <span>Kafolatsiz</span>
+                  <span>{t.inventory.noWarranty}</span>
                 )}
                 {phone.supplier && <span>· {phone.supplier}</span>}
               </div>
 
-              <div className="text-xs text-gray-500">Qo&apos;shgan: {phone.addedBy.name}</div>
+              <div className="text-xs text-gray-500">{t.inventory.addedBy}: {phone.addedBy.name}</div>
 
               <div className="flex items-center justify-between gap-2 pt-1">
                 <div className="flex items-center gap-2">
@@ -212,7 +209,7 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
                     onClick={() => setEditPhone(phone)}
                     className="text-xs text-blue-400 hover:text-blue-300"
                   >
-                    Tahrirlash
+                    {t.common.edit}
                   </button>
                 </div>
                 {phone.status === "IN_STOCK" && (
@@ -221,7 +218,7 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
                     disabled={deletingId === phone.id}
                     className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
                   >
-                    {deletingId === phone.id ? "..." : "O'chirish"}
+                    {deletingId === phone.id ? "..." : t.common.delete}
                   </button>
                 )}
               </div>
@@ -238,17 +235,17 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
             disabled={page === 1}
             className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-40"
           >
-            ← Oldingi
+            ← {t.common.prev}
           </button>
           <span className="text-sm text-gray-400">
-            {page} / {totalPages} ({phones.length} ta)
+            {page} / {totalPages} ({phones.length} {t.common.pieces})
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
             className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-40"
           >
-            Keyingi →
+            {t.common.next} →
           </button>
         </div>
       )}

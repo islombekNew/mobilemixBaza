@@ -1,3 +1,4 @@
+import { getDict } from "@/lib/i18n/server";
 interface SellerPerformanceRow {
   sellerId: string;
   sellerName: string;
@@ -11,11 +12,13 @@ interface SellerPerformanceTableProps {
 }
 
 /** Xodimlar (sotuvchilar) bo'yicha shu oylik hisobot jadvali. */
-export function SellerPerformanceTable({ rows }: SellerPerformanceTableProps) {
+export async function SellerPerformanceTable({
+  rows }: SellerPerformanceTableProps) {
+  const t = await getDict();
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-gray-400">
-        Shu oy hali sotuv bo&apos;lmagan
+        {t.reports.noSales30}
       </div>
     );
   }
@@ -25,10 +28,10 @@ export function SellerPerformanceTable({ rows }: SellerPerformanceTableProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-white/10 bg-white/5 text-left text-gray-400">
-            <th className="px-4 py-3 font-medium">Sotuvchi</th>
-            <th className="px-4 py-3 font-medium">Sotilgan soni</th>
-            <th className="px-4 py-3 font-medium">Tushum</th>
-            <th className="px-4 py-3 font-medium">Foyda</th>
+            <th className="px-4 py-3 font-medium">{t.reports.seller}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.soldCount}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.revenue}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.profit}</th>
           </tr>
         </thead>
         <tbody>

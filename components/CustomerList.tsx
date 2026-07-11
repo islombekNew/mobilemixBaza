@@ -6,6 +6,8 @@ import clsx from "clsx";
 import { AddPaymentForm } from "@/components/AddPaymentForm";
 import { formatDate } from "@/lib/format";
 import { formatMoney, type CurrencyCode } from "@/lib/currency";
+import { useT } from "@/lib/i18n/client";
+import { customerStatusLabel } from "@/lib/i18n/dictionaries";
 
 interface Payment {
   id: string;
@@ -34,24 +36,14 @@ interface CustomerListProps {
   customers: CustomerRow[];
 }
 
-const statusLabels: Record<string, { label: string; className: string }> = {
-  ACTIVE: { label: "Faol qarz", className: "bg-blue-500/15 text-blue-300" },
-  PAID: { label: "To'liq to'langan", className: "bg-green-500/15 text-green-400" },
-  OVERDUE: { label: "Muddati o'tgan", className: "bg-red-500/15 text-red-300" },
-};
-
-const paymentPlanLabels: Record<string, string> = {
-  ONE_TIME: "Bir martalik",
-  MONTHLY: "Oylik",
-};
-
 export function CustomerList({ customers }: CustomerListProps) {
+  const t = useT();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (customers.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center text-gray-400">
-        Mijozlar topilmadi
+        {t.customers.empty}
       </div>
     );
   }
@@ -62,10 +54,14 @@ export function CustomerList({ customers }: CustomerListProps) {
         const remaining = Number(customer.totalAmount) - Number(customer.paidAmount);
         const cur: CurrencyCode = customer.currency === "USD" ? "USD" : "UZS";
         const isExpanded = expandedId === customer.id;
-        const status = statusLabels[customer.status] ?? {
-          label: customer.status,
-          className: "bg-gray-500/15 text-gray-400",
-        };
+        const statusClass =
+          customer.status === "ACTIVE"
+            ? "bg-blue-500/15 text-blue-300"
+            : customer.status === "PAID"
+              ? "bg-green-500/15 text-green-400"
+              : customer.status === "OVERDUE"
+                ? "bg-red-500/15 text-red-300"
+                : "bg-gray-500/15 text-gray-400";
 
         return (
           <div
@@ -82,10 +78,10 @@ export function CustomerList({ customers }: CustomerListProps) {
                   <span
                     className={clsx(
                       "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                      status.className
+                      statusClass
                     )}
                   >
-                    {status.label}
+                    {customerStatusLabel(customer.status, t)}
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs text-gray-500">
@@ -97,7 +93,7 @@ export function CustomerList({ customers }: CustomerListProps) {
               <div className="text-right">
                 <p className="font-medium text-white">{formatMoney(remaining, cur)}</p>
                 <p className="text-xs text-gray-500">
-                 qolgan / {formatMoney(Number(customer.totalAmount), cur)}
+                 {t.common.of} {formatMoney(Number(customer.totalAmount), cur)}
                 </p>
               </div>
             </button>
@@ -106,18 +102,17 @@ export function CustomerList({ customers }: CustomerListProps) {
               <div className="border-t border-white/10 p-4">
                 <div className="mb-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                   <div>
-                    <p className="text-xs text-gray-500">To&apos;lov rejasi</p>
+                    <p className="text-xs text-gray-500">{t.sellModal.plan}</p>
                     <p className="text-gray-200">
-                      {paymentPlanLabels[customer.paymentPlan] ??
-                        customer.paymentPlan}
+                      {customer.paymentPlan === "MONTHLY" ? t.sellModal.monthly : t.sellModal.oneTime}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Muddat</p>
+                    <p className="text-xs text-gray-500">{t.customers.dueDate}</p>
                     <p className="text-gray-200">{formatDate(customer.dueDate)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">To&apos;langan</p>
+                    <p className="text-xs text-gray-500">{t.customers.paid}</p>
                     <p className="text-gray-200">{formatMoney(Number(customer.paidAmount), cur)}</p>
                   </div>
                   <div>
@@ -130,10 +125,10 @@ export function CustomerList({ customers }: CustomerListProps) {
 
                 <div className="mb-4">
                   <p className="mb-2 text-xs font-medium text-gray-400">
-                    To&apos;lov tarixi
+                    {t.customers.paymentHistory}
                   </p>
                   {customer.payments.length === 0 ? (
-                    <p className="text-sm text-gray-500">Hali to&apos;lov yo&apos;q</p>
+                    <p className="text-sm text-gray-500">{t.customers.noPayments}</p>
                   ) : (
                     <div className="space-y-1.5">
                       {customer.payments.map((payment) => (

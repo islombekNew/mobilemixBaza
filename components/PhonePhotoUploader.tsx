@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/client";
 
 interface PhonePhotoUploaderProps {
   phoneId: string;
@@ -38,6 +39,7 @@ function brandGradient(brand: string): string {
  */
 export function PhonePhotoUploader({ phoneId, photoUrl, brand, model }: PhonePhotoUploaderProps) {
   const router = useRouter();
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function PhonePhotoUploader({ phoneId, photoUrl, brand, model }: PhonePho
   }
 
   async function handleRemove() {
-    if (!confirm("Rasmni o'chirishni tasdiqlaysizmi?")) return;
+    if (!confirm(t.inventory.photoDeleteConfirm)) return;
 
     setUploading(true);
     setError(null);
@@ -133,7 +135,7 @@ export function PhonePhotoUploader({ phoneId, photoUrl, brand, model }: PhonePho
           disabled={uploading}
           className="flex-1 rounded-lg bg-white/10 px-2 py-1 text-xs font-medium text-white backdrop-blur transition hover:bg-white/20 disabled:opacity-50"
         >
-          {uploading ? "..." : photoUrl ? "Almashtirish" : "+ Rasm"}
+          {uploading ? "..." : photoUrl ? t.inventory.replacePhoto : t.inventory.addPhoto}
         </button>
         {photoUrl && (
           <button

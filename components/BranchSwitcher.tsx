@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Branch } from "@prisma/client";
+import { useT } from "@/lib/i18n/client";
 
 interface BranchSwitcherProps {
   branches: Branch[];
@@ -12,6 +13,7 @@ interface BranchSwitcherProps {
 export function BranchSwitcher({ branches, className = "", showLabel = true }: BranchSwitcherProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useT();
   const currentBranchId = searchParams.get("branchId") ?? branches[0]?.id ?? "";
 
   function handleChange(branchId: string) {
@@ -23,7 +25,7 @@ export function BranchSwitcher({ branches, className = "", showLabel = true }: B
   if (branches.length === 0) {
     return (
       <p className={`text-xs text-gray-500 ${className}`}>
-        Hali filial qo&apos;shilmagan
+        {t.branches.empty}
       </p>
     );
   }
@@ -32,7 +34,7 @@ export function BranchSwitcher({ branches, className = "", showLabel = true }: B
     <div className={className}>
       {showLabel && (
         <label htmlFor="branch-switcher" className="mb-1.5 block text-xs text-gray-400">
-          Filial
+          {t.nav.branches}
         </label>
       )}
       <select

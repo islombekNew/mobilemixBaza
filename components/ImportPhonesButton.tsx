@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/client";
 
 interface ImportSummary {
   created: number;
@@ -20,6 +21,7 @@ interface ImportPhonesButtonProps {
  */
 export function ImportPhonesButton({ branchId }: ImportPhonesButtonProps) {
   const router = useRouter();
+  const tr = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -41,12 +43,12 @@ export function ImportPhonesButton({ branchId }: ImportPhonesButtonProps) {
 
       const res = await fetch("/api/phones/import", { method: "POST", body: formData });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Import qilishda xatolik");
+      if (!res.ok) throw new Error(data.error ?? tr.inventory.importErr);
 
       setSummary(data.summary);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : tr.common.error);
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -59,25 +61,24 @@ export function ImportPhonesButton({ branchId }: ImportPhonesButtonProps) {
         onClick={() => setOpen(true)}
         className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-white/5"
       >
-        📥 Excel&apos;dan import
+        {tr.inventory.importExcel}
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
           <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#1a0a2e] p-6 sm:rounded-2xl">
             <h2 className="mb-1 text-lg font-semibold text-white">
-              Excel&apos;dan ulgurji import
+              {tr.inventory.importTitle}
             </h2>
             <p className="mb-4 text-sm text-gray-400">
-              Avval shablonni yuklab oling, to&apos;ldiring va qaytadan yuklang
-              (bir martada 500 tagacha telefon).
+              {tr.inventory.importSubtitle}
             </p>
 
             <Link
               href="/api/phones/import"
               className="mb-4 block w-full rounded-lg border border-white/10 px-4 py-2 text-center text-sm text-cyan-300 hover:bg-white/5"
             >
-              ⬇️ Shablonni yuklab olish (.xlsx)
+              {tr.inventory.downloadTemplate}
             </Link>
 
             <input
@@ -94,7 +95,7 @@ export function ImportPhonesButton({ branchId }: ImportPhonesButtonProps) {
               disabled={uploading}
               className="w-full rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {uploading ? "Yuklanmoqda..." : "To'ldirilgan faylni tanlash"}
+              {uploading ? tr.inventory.uploading : tr.inventory.selectFile}
             </button>
 
             {error && (
@@ -106,16 +107,16 @@ export function ImportPhonesButton({ branchId }: ImportPhonesButtonProps) {
             {summary && (
               <div className="mt-3 space-y-2">
                 <p className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-300">
-                  ✅ {summary.created} ta telefon qo&apos;shildi
+                  ✅ {summary.created} {tr.inventory.createdMsg}
                 </p>
                 {summary.skipped.length > 0 && (
                   <div className="max-h-40 overflow-y-auto rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
                     <p className="mb-1 font-medium">
-                      ⚠️ {summary.skipped.length} ta qator o&apos;tkazib yuborildi:
+                      ⚠️ {summary.skipped.length} {tr.inventory.skippedMsg}
                     </p>
                     {summary.skipped.map((s, i) => (
                       <div key={i}>
-                        {s.row}-qator: {s.reason}
+                        {s.row}-{tr.inventory.rowLabel}: {s.reason}
                       </div>
                     ))}
                   </div>
@@ -132,7 +133,7 @@ export function ImportPhonesButton({ branchId }: ImportPhonesButtonProps) {
               }}
               className="mt-4 w-full rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5"
             >
-              Yopish
+              {tr.common.close}
             </button>
           </div>
         </div>

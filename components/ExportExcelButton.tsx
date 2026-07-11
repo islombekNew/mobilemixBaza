@@ -1,3 +1,5 @@
+import { getDict } from "@/lib/i18n/server";
+
 interface ExportExcelButtonProps {
   branchId: string;
 }
@@ -8,13 +10,14 @@ interface ExportExcelButtonProps {
  * client-side JS shart emas, oddiy <a> orqali brauzer o'zi yuklab oladi.
  * Server komponent ekanligi sababli "use client" kerak emas.
  */
-export function ExportExcelButton({ branchId }: ExportExcelButtonProps) {
+export async function ExportExcelButton({ branchId }: ExportExcelButtonProps) {
+  const t = await getDict();
   return (
     <a
       href={`/api/reports/export?branchId=${encodeURIComponent(branchId)}`}
       className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-white/5"
     >
-      📊 Excel&apos;ga eksport
+      {t.reports.exportBtn}
     </a>
   );
 }

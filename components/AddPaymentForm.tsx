@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatNumber, parseFormattedNumber } from "@/lib/format";
+import { useT } from "@/lib/i18n/client";
 
 interface AddPaymentFormProps {
   customerId: string;
@@ -13,6 +14,7 @@ interface AddPaymentFormProps {
 
 export function AddPaymentForm({ customerId, maxAmount, currency = "UZS" }: AddPaymentFormProps) {
   const router = useRouter();
+  const t = useT();
   const [amount, setAmount] = useState("");
   const [paymentType, setPaymentType] = useState<"CASH" | "CARD">("CASH");
   const [note, setNote] = useState("");
@@ -41,13 +43,13 @@ export function AddPaymentForm({ customerId, maxAmount, currency = "UZS" }: AddP
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Xatolik yuz berdi");
+      if (!res.ok) throw new Error(data.error ?? t.common.error);
 
       setAmount("");
       setNote("");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
@@ -69,7 +71,7 @@ export function AddPaymentForm({ customerId, maxAmount, currency = "UZS" }: AddP
               : "border-white/10 text-gray-400 hover:bg-white/5"
           }`}
         >
-          💵 Naqd
+          💵 {t.sellModal.cash}
         </button>
         <button
           type="button"
@@ -80,14 +82,14 @@ export function AddPaymentForm({ customerId, maxAmount, currency = "UZS" }: AddP
               : "border-white/10 text-gray-400 hover:bg-white/5"
           }`}
         >
-          💳 Karta
+          💳 {t.sellModal.card}
         </button>
       </div>
 
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex-1 min-w-[120px]">
           <label className="mb-1 block text-xs text-gray-400">
-            Summa (maks: {currency === "USD" ? `$${formatNumber(maxAmount)}` : `${formatNumber(maxAmount)} so'm`})
+            {t.customers.paymentAmount} ({currency === "USD" ? `$${formatNumber(maxAmount)}` : `${formatNumber(maxAmount)} so'm`})
           </label>
           <input
             type="text"
@@ -99,7 +101,7 @@ export function AddPaymentForm({ customerId, maxAmount, currency = "UZS" }: AddP
           />
         </div>
         <div className="flex-1 min-w-[120px]">
-          <label className="mb-1 block text-xs text-gray-400">Izoh (ixtiyoriy)</label>
+          <label className="mb-1 block text-xs text-gray-400">{t.customers.note}</label>
           <input
             type="text"
             value={note}
@@ -112,7 +114,7 @@ export function AddPaymentForm({ customerId, maxAmount, currency = "UZS" }: AddP
           disabled={submitting}
           className="rounded-lg bg-brand-gradient px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {submitting ? "..." : "Qo'shish"}
+          {submitting ? "..." : t.common.add}
         </button>
       </div>
 

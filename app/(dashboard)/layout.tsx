@@ -5,11 +5,8 @@ import { BranchSwitcher } from "@/components/BranchSwitcher";
 import { DashboardNav } from "@/components/DashboardNav";
 import { LogoutButton } from "@/components/LogoutButton";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-
-const roleLabels: Record<string, string> = {
-  OWNER: "Egasi",
-  SELLER: "Sotuvchi",
-};
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { getDict } from "@/lib/i18n/server";
 
 export default async function DashboardLayout({
   children,
@@ -18,6 +15,7 @@ export default async function DashboardLayout({
 }) {
   const user = await requireUser();
   const branches = await listBranches(user);
+  const t = await getDict();
 
   return (
     <>
@@ -33,8 +31,9 @@ export default async function DashboardLayout({
           <DashboardNav role={user.role} />
 
           <div className="mt-auto space-y-3 pt-4">
+            <LanguageSwitcher />
             <p className="px-1 text-xs text-gray-500">
-              {roleLabels[user.role] ?? user.role}
+              {t.roles[user.role] ?? user.role}
             </p>
             <LogoutButton />
           </div>
@@ -52,9 +51,10 @@ export default async function DashboardLayout({
                 <BranchSwitcher
                   branches={branches}
                   showLabel={false}
-                  className="flex-1 max-w-[160px]"
+                  className="flex-1 max-w-[140px]"
                 />
               )}
+              <LanguageSwitcher compact />
               <LogoutButton />
             </div>
           </header>

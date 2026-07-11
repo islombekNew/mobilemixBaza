@@ -4,7 +4,9 @@ import { useActionState, useState } from "react";
 import { loginAction, type LoginResult } from "./actions";
 import { MixMobileLogo } from "@/components/MixMobileLogo";
 import { PasswordInput } from "@/components/PasswordInput";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { looksLikePhone } from "@/lib/login-format";
+import { useT } from "@/lib/i18n/client";
 
 const initialState: LoginResult = {};
 
@@ -12,6 +14,7 @@ export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
+  const t = useT();
 
   // Telefon raqami kiritilsa "+998" avtomatik qo'yiladi; matnli login
   // (masalan "namangan_sotuvchi") esa o'zgarmasdan qoladi.
@@ -40,10 +43,14 @@ export default function LoginPage() {
         aria-hidden="true"
       />
 
+      <div className="absolute right-4 top-4 z-20">
+        <LanguageSwitcher />
+      </div>
+
       <div className="relative z-10 w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
           <MixMobileLogo className="h-20 w-auto" />
-          <p className="text-sm tracking-wide text-gray-400">Istaganingiz shu yerda</p>
+          <p className="text-sm tracking-wide text-gray-400">{t.login.tagline}</p>
         </div>
 
         <form
@@ -55,7 +62,7 @@ export default function LoginPage() {
               htmlFor="login"
               className="mb-1.5 block text-sm font-medium text-gray-300"
             >
-              Login
+              {t.login.login}
             </label>
             <input
               id="login"
@@ -67,7 +74,7 @@ export default function LoginPage() {
               value={login}
               onChange={(e) => handleLoginChange(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 outline-none transition focus:border-[#ff4fd8] focus:ring-1 focus:ring-[#ff4fd8]/50"
-              placeholder="+998 88 216 28 82"
+              placeholder={t.login.loginPlaceholder}
             />
           </div>
 
@@ -76,7 +83,7 @@ export default function LoginPage() {
               htmlFor="password"
               className="mb-1.5 block text-sm font-medium text-gray-300"
             >
-              Parol
+              {t.login.password}
             </label>
             <PasswordInput
               id="password"
@@ -90,7 +97,7 @@ export default function LoginPage() {
 
           {state?.error && (
             <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-              {state.error}
+              {state.error === "required" ? t.login.required : t.login.invalid}
             </p>
           )}
 
@@ -99,12 +106,12 @@ export default function LoginPage() {
             disabled={isPending}
             className="w-full rounded-lg bg-brand-gradient px-4 py-2.5 text-sm font-semibold text-white shadow-neon-pink transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPending ? "Kirilmoqda..." : "Kirish"}
+            {isPending ? t.login.entering : t.login.enter}
           </button>
         </form>
 
         <p className="mt-6 text-center text-xs text-gray-500">
-          Parolni unutgan bo&apos;lsangiz, egasiga murojaat qiling
+          {t.login.forgot}
         </p>
       </div>
     </main>

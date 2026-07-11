@@ -1,3 +1,4 @@
+import { getDict } from "@/lib/i18n/server";
 import { formatDate, formatSum } from "@/lib/format";
 
 interface ProfitRow {
@@ -13,11 +14,13 @@ interface ProfitReportTableProps {
   rows: ProfitRow[];
 }
 
-export function ProfitReportTable({ rows }: ProfitReportTableProps) {
+export async function ProfitReportTable({
+  rows }: ProfitReportTableProps) {
+  const t = await getDict();
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-gray-400">
-        Hali sotuv amalga oshirilmagan
+        {t.sales.noHistory}
       </div>
     );
   }
@@ -27,11 +30,11 @@ export function ProfitReportTable({ rows }: ProfitReportTableProps) {
       <table className="w-full text-sm">
         <thead className="sticky top-0">
           <tr className="border-b border-white/10 bg-[#1a0a2e] text-left text-gray-400">
-            <th className="px-4 py-3 font-medium">Model</th>
-            <th className="px-4 py-3 font-medium">Sana</th>
-            <th className="px-4 py-3 font-medium">Tan narxi</th>
-            <th className="px-4 py-3 font-medium">Sotuv narxi</th>
-            <th className="px-4 py-3 font-medium">Foyda</th>
+            <th className="px-4 py-3 font-medium">{t.reports.model}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.date}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.costPrice}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.salePrice}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.profit}</th>
           </tr>
         </thead>
         <tbody>

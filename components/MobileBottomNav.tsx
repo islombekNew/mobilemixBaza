@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { Role } from "@prisma/client";
 import clsx from "clsx";
+import { useT } from "@/lib/i18n/client";
 
 const navItems = [
   {
     href: "/dashboard",
-    label: "Bosh",
+    key: "home" as const,
     roles: ["OWNER", "SELLER"] as Role[],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -19,7 +20,7 @@ const navItems = [
   },
   {
     href: "/ombor",
-    label: "Ombor",
+    key: "inventory" as const,
     roles: ["OWNER", "SELLER"] as Role[],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -31,7 +32,7 @@ const navItems = [
   },
   {
     href: "/sotuv",
-    label: "Sotuv",
+    key: "sales" as const,
     roles: ["OWNER", "SELLER"] as Role[],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -43,7 +44,7 @@ const navItems = [
   },
   {
     href: "/mijozlar",
-    label: "Mijozlar",
+    key: "customers" as const,
     roles: ["OWNER", "SELLER"] as Role[],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -56,7 +57,7 @@ const navItems = [
   },
   {
     href: "/hisobotlar",
-    label: "Hisobot",
+    key: "reports" as const,
     roles: ["OWNER"] as Role[],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -68,7 +69,7 @@ const navItems = [
   },
   {
     href: "/filiallar",
-    label: "Filiallar",
+    key: "branches" as const,
     roles: ["OWNER"] as Role[],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -79,7 +80,7 @@ const navItems = [
   },
   {
     href: "/xodimlar",
-    label: "Xodimlar",
+    key: "employees" as const,
     roles: ["OWNER"] as Role[],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -94,6 +95,7 @@ export function MobileBottomNav({ role }: { role: Role }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const branchId = searchParams.get("branchId");
+  const t = useT();
 
   const items = navItems.filter((item) => item.roles.includes(role));
 
@@ -119,7 +121,7 @@ export function MobileBottomNav({ role }: { role: Role }) {
             >
               {item.icon}
             </span>
-            <span>{item.label}</span>
+            <span>{t.nav[item.key]}</span>
           </Link>
         );
       })}

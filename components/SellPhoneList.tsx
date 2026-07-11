@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { SellModal, type SellerOption } from "@/components/SellModal";
 import { formatMoney } from "@/lib/currency";
+import { useT } from "@/lib/i18n/client";
 
 interface PhoneRow {
   id: string;
@@ -29,11 +30,12 @@ export function SellPhoneList({
   currentUserId,
 }: SellPhoneListProps) {
   const [selectedPhone, setSelectedPhone] = useState<PhoneRow | null>(null);
+  const t = useT();
 
   if (phones.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center text-gray-400">
-        Omborda sotish uchun telefon yo&apos;q
+        {t.sales.noPhones}
       </div>
     );
   }
@@ -62,7 +64,7 @@ export function SellPhoneList({
               onClick={() => setSelectedPhone(phone)}
               className="mt-3 rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-neon-pink transition hover:opacity-90"
             >
-              Sotish
+              {t.sales.sell}
             </button>
           </div>
         ))}

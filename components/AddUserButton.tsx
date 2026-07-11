@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PasswordInput } from "@/components/PasswordInput";
+import { useT } from "@/lib/i18n/client";
 
 interface BranchOption {
   id: string;
@@ -23,6 +24,7 @@ const initialForm = {
 
 export function AddUserButton({ branches }: AddUserButtonProps) {
   const router = useRouter();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     ...initialForm,
@@ -46,13 +48,13 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Xatolik yuz berdi");
+      if (!res.ok) throw new Error(data.error ?? t.common.error);
 
       setOpen(false);
       setForm({ ...initialForm, branchId: branches[0]?.id ?? "" });
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
@@ -64,20 +66,20 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
         onClick={() => setOpen(true)}
         className="rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-neon-pink transition hover:opacity-90"
       >
-        + Xodim qo&apos;shish
+        {t.employees.add}
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
           <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#1a0a2e] p-6 sm:rounded-2xl">
             <h2 className="mb-4 text-lg font-semibold text-white">
-              Yangi xodim qo&apos;shish
+              {t.employees.addTitle}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Ism-familiya
+                  {t.employees.name}
                 </label>
                 <input
                   type="text"
@@ -91,13 +93,13 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Login
+                  {t.employees.login}
                 </label>
                 <input
                   type="text"
                   value={form.login}
                   onChange={(e) => setForm({ ...form, login: e.target.value })}
-                  placeholder="seller2 yoki +998901234567"
+                  placeholder="seller2 / +998901234567"
                   required
                   minLength={3}
                   pattern="\+?[a-zA-Z0-9_.\-]+"
@@ -108,12 +110,12 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Vaqtinchalik parol
+                  {t.employees.tempPassword}
                 </label>
                 <PasswordInput
                   value={form.password}
                   onChange={(v) => setForm({ ...form, password: v })}
-                  placeholder="Kamida 6 belgi"
+                  placeholder={t.common.min6}
                   required
                   minLength={6}
                 />
@@ -121,7 +123,7 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Roli
+                  {t.employees.role}
                 </label>
                 <select
                   value={form.role}
@@ -130,15 +132,15 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
                   }
                   className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white outline-none focus:border-[#ff4fd8]"
                 >
-                  <option value="SELLER">Sotuvchi</option>
-                  <option value="OWNER">Egasi (Owner)</option>
+                  <option value="SELLER">{t.roles.SELLER}</option>
+                  <option value="OWNER">{t.employees.ownerOption}</option>
                 </select>
               </div>
 
               {form.role === "SELLER" && (
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                    Filial
+                    {t.employees.branch}
                   </label>
                   <select
                     value={form.branchId}
@@ -147,7 +149,7 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
                     className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white outline-none focus:border-[#ff4fd8]"
                   >
                     {branches.length === 0 && (
-                      <option value="">Avval filial qo&apos;shing</option>
+                      <option value="">{t.branches.empty}</option>
                     )}
                     {branches.map((branch) => (
                       <option key={branch.id} value={branch.id}>
@@ -170,14 +172,14 @@ export function AddUserButton({ branches }: AddUserButtonProps) {
                   onClick={() => setOpen(false)}
                   className="flex-1 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5"
                 >
-                  Bekor qilish
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || (form.role === "SELLER" && !form.branchId)}
                   className="flex-1 rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  {submitting ? "Saqlanmoqda..." : "Saqlash"}
+                  {submitting ? t.common.saving : t.common.save}
                 </button>
               </div>
             </form>

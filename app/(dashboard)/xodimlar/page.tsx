@@ -4,6 +4,7 @@ import { listBranches } from "@/lib/branches";
 import { redirect } from "next/navigation";
 import { UserTable } from "@/components/UserTable";
 import { AddUserButton } from "@/components/AddUserButton";
+import { getDict } from "@/lib/i18n/server";
 
 export default async function XodimlarPage() {
   const user = await requireUser();
@@ -20,11 +21,12 @@ export default async function XodimlarPage() {
 
   // Map'ni client komponentga uzatish uchun oddiy obyektga aylantiramiz
   const monthlyStats = Object.fromEntries(stats);
+  const t = await getDict();
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-white">Xodimlar</h1>
+        <h1 className="text-2xl font-semibold text-white">{t.employees.title}</h1>
         <AddUserButton branches={branches} />
       </div>
 

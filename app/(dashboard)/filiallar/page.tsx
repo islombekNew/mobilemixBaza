@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AddBranchButton } from "@/components/AddBranchButton";
 import { EditBranchButton } from "@/components/EditBranchButton";
 import { DeleteBranchButton } from "@/components/DeleteBranchButton";
+import { getDict } from "@/lib/i18n/server";
 import type { Branch } from "@prisma/client";
 
 export default async function FiliallarPage() {
@@ -14,11 +15,12 @@ export default async function FiliallarPage() {
   }
 
   const branches: Branch[] = await listBranches(user);
+  const t = await getDict();
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-white">Filiallar</h1>
+        <h1 className="text-2xl font-semibold text-white">{t.branches.title}</h1>
         <AddBranchButton />
       </div>
 
@@ -42,7 +44,7 @@ export default async function FiliallarPage() {
 
       {branches.length === 0 && (
         <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center text-gray-400">
-          Hali filial qo&apos;shilmagan
+          {t.branches.empty}
         </div>
       )}
     </div>

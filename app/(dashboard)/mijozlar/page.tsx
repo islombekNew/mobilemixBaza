@@ -5,6 +5,7 @@ import { resolveBranchId } from "@/lib/access-control";
 import { CustomerFiltersBar } from "@/components/CustomerFiltersBar";
 import { CustomerList } from "@/components/CustomerList";
 import { DebtSummaryCards } from "@/components/DebtSummaryCards";
+import { getDict } from "@/lib/i18n/server";
 import type { Branch, CustomerStatus } from "@prisma/client";
 
 interface MijozlarPageProps {
@@ -19,6 +20,7 @@ interface MijozlarPageProps {
 export default async function MijozlarPage({ searchParams }: MijozlarPageProps) {
   const user = await requireUser();
   const params = await searchParams;
+  const t = await getDict();
 
   const branches = await listBranches(user);
   const branchId = resolveBranchId(
@@ -28,12 +30,7 @@ export default async function MijozlarPage({ searchParams }: MijozlarPageProps) 
   );
 
   if (!branchId) {
-    return (
-      <div className="text-gray-400">
-        Hali filial qo&apos;shilmagan. Avval &quot;Filiallar&quot; bo&apos;limidan
-        filial qo&apos;shing.
-      </div>
-    );
+    return <div className="text-gray-400">{t.branches.empty}</div>;
   }
 
   await syncOverdueStatuses(user, branchId);
@@ -50,7 +47,7 @@ export default async function MijozlarPage({ searchParams }: MijozlarPageProps) 
  return (
     <div>
       <h1 className="mb-6 text-2xl font-semibold text-white">
-        Mijozlar va qarz hisobi
+        {t.customers.pageTitle}
       </h1>
 
       <DebtSummaryCards summary={debtSummary} />

@@ -1,3 +1,4 @@
+import { getDict } from "@/lib/i18n/server";
 interface BranchComparisonRow {
   branchId: string;
   branchName: string;
@@ -11,11 +12,13 @@ interface BranchComparisonTableProps {
   rows: BranchComparisonRow[];
 }
 
-export function BranchComparisonTable({ rows }: BranchComparisonTableProps) {
+export async function BranchComparisonTable({
+  rows }: BranchComparisonTableProps) {
+  const t = await getDict();
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-gray-400">
-        Hali filial qo&apos;shilmagan
+        {t.branches.empty}
       </div>
     );
   }
@@ -25,11 +28,11 @@ export function BranchComparisonTable({ rows }: BranchComparisonTableProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-white/10 bg-white/5 text-left text-gray-400">
-            <th className="px-4 py-3 font-medium">Filial</th>
-            <th className="px-4 py-3 font-medium">Omborda</th>
-            <th className="px-4 py-3 font-medium">Sotilgan</th>
-            <th className="px-4 py-3 font-medium">Tushum</th>
-            <th className="px-4 py-3 font-medium">Foyda</th>
+            <th className="px-4 py-3 font-medium">{t.reports.branch}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.inStock}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.sold}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.revenue}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.profit}</th>
           </tr>
         </thead>
         <tbody>

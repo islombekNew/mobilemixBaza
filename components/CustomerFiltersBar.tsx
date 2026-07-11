@@ -3,11 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import clsx from "clsx";
+import { useT } from "@/lib/i18n/client";
 
 export function CustomerFiltersBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const t = useT();
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -33,7 +35,7 @@ export function CustomerFiltersBar() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Ism yoki telefon raqami bo'yicha qidirish..."
+          placeholder={t.customers.search}
           className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
         />
       </form>
@@ -43,10 +45,10 @@ export function CustomerFiltersBar() {
         onChange={(e) => updateParam("status", e.target.value)}
         className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[#ff4fd8]"
       >
-        <option value="">Barcha statuslar</option>
-        <option value="ACTIVE">Faol qarz</option>
-        <option value="PAID">To&apos;liq to&apos;langan</option>
-        <option value="OVERDUE">Muddati o&apos;tgan</option>
+        <option value="">{t.common.status} · {t.common.all}</option>
+        <option value="ACTIVE">{t.customers.statusActive}</option>
+        <option value="PAID">{t.customers.statusPaid}</option>
+        <option value="OVERDUE">{t.customers.statusOverdue}</option>
       </select>
 
       <button
@@ -58,7 +60,7 @@ export function CustomerFiltersBar() {
             : "border-white/10 text-gray-300 hover:bg-white/5"
         )}
       >
-        Faqat muddati o&apos;tganlar
+        {t.customers.onlyOverdue}
       </button>
     </div>
   );

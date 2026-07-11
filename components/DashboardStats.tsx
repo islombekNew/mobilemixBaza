@@ -1,6 +1,7 @@
 import type { DashboardPeriod } from "@/lib/reports";
 import { formatSum as libFormatSum, formatDate } from "@/lib/format";
 import { DashboardCharts } from "@/components/DashboardCharts";
+import { getDict } from "@/lib/i18n/server";
 
 interface DashboardStatsProps {
   stats: {
@@ -30,34 +31,27 @@ function formatDay(value: string | null) {
   return formatDate(value);
 }
 
-const periodLabel: Record<DashboardPeriod, string> = {
-  today: "Bugun",
-  yesterday: "Kecha",
-  week: "Hafta",
-  month: "Oy",
-};
-
-export function DashboardStats({ stats, period = "month" }: DashboardStatsProps) {
-  const p = periodLabel[period];
+export async function DashboardStats({ stats }: DashboardStatsProps) {
+  const t = await getDict();
   return (
     <div className="space-y-6">
       {/* Statistika kartalar */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Omborda qolgan" value={String(stats.inStockCount)} icon="📦" />
+        <StatCard label={t.dashboard.inStock} value={String(stats.inStockCount)} icon="📦" />
         <StatCard
-          label={`${p} kirgan`}
+          label={t.dashboard.incoming}
           value={String(stats.incomingCount)}
           sub={formatSum(stats.incomingCostTotal)}
           icon="📥"
         />
         <StatCard
-          label={`${p} sotilgan`}
+          label={t.dashboard.sold}
           value={String(stats.soldCount)}
           sub={formatSum(stats.soldRevenueTotal)}
           icon="🛒"
         />
         <StatCard
-          label={`${p} foyda`}
+          label={t.dashboard.profit}
           value={formatSum(stats.monthProfit)}
           icon="💰"
           accent
@@ -67,16 +61,18 @@ export function DashboardStats({ stats, period = "month" }: DashboardStatsProps)
       {/* Qo'shimcha ma'lumot */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs text-gray-400">🏅 Eng ko&apos;p sotilgan model</p>
+          <p className="text-xs text-gray-400">🏅 {t.dashboard.topModel}</p>
           <p className="mt-1 text-lg font-semibold text-white">
             {stats.topModel ?? "—"}
           </p>
           {stats.topModel && (
-            <p className="text-xs text-gray-500">{stats.topModelCount} dona</p>
+            <p className="text-xs text-gray-500">
+              {stats.topModelCount} {t.common.pieces}
+            </p>
           )}
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs text-gray-400">📅 Eng yuqori sotuv kuni</p>
+          <p className="text-xs text-gray-400">📅 {t.dashboard.bestDay}</p>
           <p className="mt-1 text-lg font-semibold text-white">
             {formatDay(stats.bestDay)}
           </p>

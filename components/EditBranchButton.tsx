@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/client";
 import type { Branch } from "@prisma/client";
 
 interface EditBranchButtonProps {
@@ -10,6 +11,7 @@ interface EditBranchButtonProps {
 
 export function EditBranchButton({ branch }: EditBranchButtonProps) {
   const router = useRouter();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     name: branch.name,
@@ -30,11 +32,11 @@ export function EditBranchButton({ branch }: EditBranchButtonProps) {
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Xatolik yuz berdi");
+      if (!res.ok) throw new Error(data.error ?? t.common.error);
       router.refresh();
       setOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
@@ -46,16 +48,16 @@ export function EditBranchButton({ branch }: EditBranchButtonProps) {
         onClick={() => setOpen(true)}
         className="shrink-0 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-300 hover:bg-white/5"
       >
-        Tahrirlash
+        {t.common.edit}
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
           <div className="max-h-[92vh] w-full max-w-sm overflow-y-auto rounded-t-2xl border border-white/10 bg-[#1a0a2e] p-6 sm:rounded-2xl">
-            <h2 className="mb-4 text-lg font-semibold text-white">Filialni tahrirlash</h2>
+            <h2 className="mb-4 text-lg font-semibold text-white">{t.branches.editTitle}</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Filial nomi</label>
+                <label className="mb-1.5 block text-sm font-medium text-gray-300">{t.branches.name}</label>
                 <input
                   type="text"
                   required
@@ -65,7 +67,7 @@ export function EditBranchButton({ branch }: EditBranchButtonProps) {
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Manzil</label>
+                <label className="mb-1.5 block text-sm font-medium text-gray-300">{t.branches.address}</label>
                 <input
                   type="text"
                   value={form.address}
@@ -74,7 +76,7 @@ export function EditBranchButton({ branch }: EditBranchButtonProps) {
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Telefon raqami</label>
+                <label className="mb-1.5 block text-sm font-medium text-gray-300">{t.branches.phone}</label>
                 <input
                   type="text"
                   value={form.phoneNumber}
@@ -95,14 +97,14 @@ export function EditBranchButton({ branch }: EditBranchButtonProps) {
                   onClick={() => setOpen(false)}
                   className="flex-1 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5"
                 >
-                  Bekor qilish
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 rounded-lg bg-[#ff4fd8] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  {submitting ? "Saqlanmoqda..." : "Saqlash"}
+                  {submitting ? t.common.saving : t.common.save}
                 </button>
               </div>
             </form>

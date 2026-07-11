@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { formatMoney } from "@/lib/currency";
+import { useT } from "@/lib/i18n/client";
+import { paymentTypeLabel } from "@/lib/i18n/dictionaries";
 
 interface SaleRow {
   id: string;
@@ -23,12 +25,6 @@ interface SalesHistoryProps {
   /** Qaytarish tugmasi faqat egasiga ko'rinadi */
   isOwner?: boolean;
 }
-
-const paymentTypeLabels: Record<string, string> = {
-  CASH: "Naqd",
-  CARD: "Karta",
-  CREDIT: "Kredit",
-};
 
 function formatDateTime(value: string | Date) {
   const d = new Date(value);
@@ -50,6 +46,7 @@ function saleCurrency(sale: SaleRow): "USD" | "UZS" {
  */
 export function SalesHistory({ sales, isOwner = false }: SalesHistoryProps) {
   const router = useRouter();
+  const t = useT();
   const [search, setSearch] = useState("");
   const [sellerFilter, setSellerFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
@@ -83,7 +80,7 @@ export function SalesHistory({ sales, isOwner = false }: SalesHistoryProps) {
   if (sales.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center text-gray-400">
-        Hali sotuv amalga oshirilmagan
+        {t.sales.noHistory}
       </div>
     );
   }
@@ -96,7 +93,7 @@ export function SalesHistory({ sales, isOwner = false }: SalesHistoryProps) {
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Qidiruv: model, IMEI, mijoz..."
+          placeholder={t.sales.searchPlaceholder}
           className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8] sm:flex-1"
         />
         <div className="grid grid-cols-2 gap-2 sm:flex">
@@ -105,7 +102,7 @@ export function SalesHistory({ sales, isOwner = false }: SalesHistoryProps) {
             onChange={(e) => setSellerFilter(e.target.value)}
             className="rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-[#ff4fd8]"
           >
-            <option value="">Barcha sotuvchilar</option>
+            <option value="">{t.sales.allSellers}</option>
             {sellerOptions.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -117,17 +114,17 @@ export function SalesHistory({ sales, isOwner = false }: SalesHistoryProps) {
             onChange={(e) => setPaymentFilter(e.target.value)}
             className="rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-[#ff4fd8]"
           >
-            <option value="">Barcha to&apos;lovlar</option>
-            <option value="CASH">Naqd</option>
-            <option value="CARD">Karta</option>
-            <option value="CREDIT">Kredit</option>
+            <option value="">{t.sales.allPayments}</option>
+            <option value="CASH">{t.sellModal.cash}</option>
+            <option value="CARD">{t.sellModal.card}</option>
+            <option value="CREDIT">{t.sellModal.credit}</option>
           </select>
         </div>
       </div>
 
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center text-gray-400">
-          Filtrga mos sotuv topilmadi
+          {t.sales.noFilterMatch}
         </div>
       ) : (
         <>
@@ -176,14 +173,14 @@ export function SalesHistory({ sales, isOwner = false }: SalesHistoryProps) {
                     rel="noopener noreferrer"
                     className="text-xs text-cyan-300 hover:text-cyan-200"
                   >
-                    🧾 Chek
+                    {t.sales.receipt}
                   </a>
                   {isOwner && !sale.returnedAt && (
                     <button
                       onClick={() => setReturningSale(sale)}
                       className="text-xs text-red-400 hover:text-red-300"
                     >
-                      ↩︎ Qaytarish
+                      {t.sales.returnBtn}
                     </button>
                   )}
                 </div>
@@ -196,13 +193,13 @@ export function SalesHistory({ sales, isOwner = false }: SalesHistoryProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 bg-white/5 text-left text-gray-400">
-                  <th className="px-4 py-3 font-medium">Telefon</th>
-                  <th className="px-4 py-3 font-medium">Summa</th>
-                  <th className="px-4 py-3 font-medium">Holat</th>
-                  <th className="px-4 py-3 font-medium">Mijoz</th>
-                  <th className="px-4 py-3 font-medium">Sotuvchi</th>
-                  <th className="px-4 py-3 font-medium">Sana</th>
-                  <th className="px-4 py-3 font-medium">Amallar</th>
+                  <th className="px-4 py-3 font-medium">{t.sales.phone}</th>
+                  <th className="px-4 py-3 font-medium">{t.sales.amount}</th>
+                  <th className="px-4 py-3 font-medium">{t.common.status}</th>
+                  <th className="px-4 py-3 font-medium">{t.sales.customer}</th>
+                  <th className="px-4 py-3 font-medium">{t.sales.seller}</th>
+                  <th className="px-4 py-3 font-medium">{t.common.date}</th>
+                  <th className="px-4 py-3 font-medium">{t.common.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -245,14 +242,14 @@ export function SalesHistory({ sales, isOwner = false }: SalesHistoryProps) {
                           rel="noopener noreferrer"
                           className="text-xs text-cyan-300 hover:text-cyan-200"
                         >
-                          🧾 Chek
+                          {t.sales.receipt}
                         </a>
                         {isOwner && !sale.returnedAt && (
                           <button
                             onClick={() => setReturningSale(sale)}
                             className="text-xs text-red-400 hover:text-red-300"
                           >
-                            ↩︎ Qaytarish
+                            {t.sales.returnBtn}
                           </button>
                         )}
                       </div>
@@ -280,6 +277,7 @@ export function SalesHistory({ sales, isOwner = false }: SalesHistoryProps) {
 }
 
 function SaleBadges({ sale }: { sale: SaleRow }) {
+  const t = useT();
   return (
     <>
       <span
@@ -290,14 +288,14 @@ function SaleBadges({ sale }: { sale: SaleRow }) {
             : "bg-green-500/15 text-green-400"
         )}
       >
-        {paymentTypeLabels[sale.paymentType] ?? sale.paymentType}
+        {paymentTypeLabel(sale.paymentType, t)}
       </span>
       {sale.returnedAt && (
         <span
           className="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-medium text-red-400"
           title={sale.returnReason ?? undefined}
         >
-          ↩︎ Qaytarilgan
+          {t.sales.returned}
         </span>
       )}
     </>
@@ -314,6 +312,7 @@ function ReturnSaleModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const t = useT();
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -328,10 +327,10 @@ function ReturnSaleModal({
         body: JSON.stringify({ reason: reason.trim() || undefined }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Qaytarishda xatolik");
+      if (!res.ok) throw new Error(data.error ?? t.common.error);
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : t.common.error);
       setSubmitting(false);
     }
   }
@@ -340,22 +339,22 @@ function ReturnSaleModal({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
       <div className="max-h-[92vh] w-full max-w-sm overflow-y-auto rounded-t-2xl border border-white/10 bg-[#1a0a2e] p-6 sm:rounded-2xl">
         <h3 className="mb-1 text-lg font-semibold text-white">
-          Sotuvni qaytarish
+          {t.returnModal.title}
         </h3>
         <p className="mb-4 text-sm text-gray-400">
-          {sale.phone.brand} {sale.phone.model} omborga qaytadi
-          {sale.customer ? ", mijoz qarzi bekor bo'ladi" : ""}. Sotuv yozuvi
-          tarixda saqlanadi, lekin hisobotlardan chiqariladi.
+          {sale.phone.brand} {sale.phone.model} {t.returnModal.note}
+          {sale.customer ? t.returnModal.noteCredit : ""}
+          {t.returnModal.noteTail}
         </p>
 
         <label className="mb-1.5 block text-sm font-medium text-gray-300">
-          Sabab (ixtiyoriy)
+          {t.returnModal.reason}
         </label>
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={2}
-          placeholder="Masalan: mijoz qaytardi, ekranda dog' bor..."
+          placeholder={t.returnModal.reasonPlaceholder}
           className="mb-3 w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
         />
 
@@ -371,14 +370,14 @@ function ReturnSaleModal({
             disabled={submitting}
             className="flex-1 rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5"
           >
-            Bekor qilish
+            {t.common.cancel}
           </button>
           <button
             onClick={handleReturn}
             disabled={submitting}
             className="flex-1 rounded-lg bg-red-500/80 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:opacity-60"
           >
-            {submitting ? "Qaytarilmoqda..." : "Qaytarish"}
+            {submitting ? t.returnModal.returning : t.returnModal.doReturn}
           </button>
         </div>
       </div>

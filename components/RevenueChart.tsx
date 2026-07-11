@@ -10,6 +10,8 @@ import {
   Tooltip,
 } from "recharts";
 import { formatAxisMoney } from "@/lib/currency";
+import { useT } from "@/lib/i18n/client";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 interface RevenueChartPoint {
   date: string; // "2026-06-20"
@@ -30,8 +32,13 @@ function formatTooltipValue(value: number) {
   return `${value.toLocaleString("uz-UZ")} so'm`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function ChartTooltip({ active, payload, label }: any) {
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  t,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}: any & { t: Dictionary }) {
   if (!active || !payload?.length) return null;
   const hasLoss = payload.some(
     (p: { dataKey: string; value: number }) => p.dataKey === "profit" && p.value < 0
@@ -44,12 +51,12 @@ function ChartTooltip({ active, payload, label }: any) {
           key={i}
           style={{ color: p.dataKey === "profit" && p.value < 0 ? "#f87171" : p.color }}
         >
-          {p.dataKey === "revenue" ? "Tushum" : "Foyda"}: {formatTooltipValue(Number(p.value))}
+          {p.dataKey === "revenue" ? t.dashboard.revenue : t.phoneForm.profit}: {formatTooltipValue(Number(p.value))}
         </p>
       ))}
       {hasLoss && (
         <p className="mt-1.5 border-t border-white/10 pt-1.5 text-[11px] leading-snug text-red-300/80">
-          ⚠️ Bu kunda telefon(lar) kelgan narxidan arzon sotilgan
+          ⚠️ {t.dashboard.cheaperHint}
         </p>
       )}
     </div>
@@ -58,12 +65,13 @@ function ChartTooltip({ active, payload, label }: any) {
 
 /** Oxirgi 30 kunlik tushum/foyda grafigi (hisobotlar sahifasi). */
 export function RevenueChart({ data }: RevenueChartProps) {
+  const t = useT();
   const hasAnyData = data.some((d) => d.revenue > 0);
 
   if (!hasAnyData) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-gray-400">
-        Oxirgi 30 kunda hali sotuv bo&apos;lmagan
+        {t.reports.noSales30}
       </div>
     );
   }
@@ -86,7 +94,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
             width={52}
             tickFormatter={formatAxisMoney}
           />
-          <Tooltip content={<ChartTooltip />} />
+          <Tooltip content={(props) => <ChartTooltip {...props} t={t} />} />
           <Line
             type="monotone"
             dataKey="revenue"
@@ -105,10 +113,10 @@ export function RevenueChart({ data }: RevenueChartProps) {
       </ResponsiveContainer>
       <div className="mt-2 flex gap-4 text-xs text-gray-400">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-[#ff4fd8]" /> Tushum
+          <span className="inline-block h-2 w-2 rounded-full bg-[#ff4fd8]" /> {t.dashboard.revenue}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-[#a020c0]" /> Foyda
+          <span className="inline-block h-2 w-2 rounded-full bg-[#a020c0]" /> {t.phoneForm.profit}
         </span>
       </div>
     </div>

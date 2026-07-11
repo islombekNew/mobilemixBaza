@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { EditUserModal } from "@/components/EditUserModal";
 import { formatAxisMoney } from "@/lib/currency";
+import { useT } from "@/lib/i18n/client";
 
 export interface UserRow {
   id: string;
@@ -35,11 +36,6 @@ interface UserTableProps {
   currentUserId: string;
 }
 
-const roleLabels: Record<string, string> = {
-  OWNER: "Egasi",
-  SELLER: "Sotuvchi",
-};
-
 /**
  * Xodimlar ro'yxati: tahrirlash, bloklash/blokdan chiqarish va har birining
  * shu oylik sotuv ko'rsatkichi. Desktopda jadval, mobilda kartochkalar.
@@ -51,6 +47,7 @@ export function UserTable({
   currentUserId,
 }: UserTableProps) {
   const router = useRouter();
+  const t = useT();
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,8 +55,8 @@ export function UserTable({
   async function toggleBlock(u: UserRow) {
     const blocked = !u.deletedAt;
     const question = blocked
-      ? `${u.name} bloklansinmi? U tizimga kira olmay qoladi (sotuvlari tarixda saqlanadi).`
-      : `${u.name} blokdan chiqarilsinmi?`;
+      ? `${u.name} — ${t.employees.blockConfirm}`
+      : `${u.name} — ${t.employees.unblockConfirm}`;
     if (!confirm(question)) return;
 
     setBusyId(u.id);
@@ -71,10 +68,10 @@ export function UserTable({
         body: JSON.stringify({ blocked }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Xatolik yuz berdi");
+      if (!res.ok) throw new Error(data.error ?? t.common.error);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setBusyId(null);
     }
@@ -83,7 +80,7 @@ export function UserTable({
   if (users.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center text-gray-400">
-        Hali xodim qo&apos;shilmagan
+        {t.employees.empty}
       </div>
     );
   }
@@ -126,19 +123,19 @@ export function UserTable({
               </div>
 
               <div className="mt-2 text-xs text-gray-400">
-                {u.branch?.name ?? "Barcha filiallar"}
+                {u.branch?.name ?? t.employees.allBranches}
               </div>
 
               {stat && stat.count > 0 && (
                 <div className="mt-2 flex gap-4 rounded-lg bg-black/20 px-3 py-2 text-xs">
                   <span className="text-gray-300">
-                    Shu oy: <b className="text-white">{stat.count} ta</b>
+                    {t.employees.thisMonth}: <b className="text-white">{stat.count} {t.common.pieces}</b>
                   </span>
                   <span className="text-gray-300">
-                    Tushum: <b className="text-white">{formatAxisMoney(stat.revenue)}</b>
+                    {t.dashboard.revenue}: <b className="text-white">{formatAxisMoney(stat.revenue)}</b>
                   </span>
                   <span className="text-gray-300">
-                    Foyda:{" "}
+                    {t.phoneForm.profit}:{" "}
                     <b className={stat.profit >= 0 ? "text-green-400" : "text-red-400"}>
                       {formatAxisMoney(stat.profit)}
                     </b>
@@ -151,7 +148,7 @@ export function UserTable({
                   onClick={() => setEditUser(u)}
                   className="text-xs text-blue-400 hover:text-blue-300"
                 >
-                  Tahrirlash
+                  {t.common.edit}
                 </button>
                 {u.id !== currentUserId && (
                   <button
@@ -167,8 +164,8 @@ export function UserTable({
                     {busyId === u.id
                       ? "..."
                       : u.deletedAt
-                        ? "Blokdan chiqarish"
-                        : "Bloklash"}
+                        ? t.employees.unblock
+                        : t.employees.block}
                   </button>
                 )}
               </div>
@@ -182,12 +179,12 @@ export function UserTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/10 bg-white/5 text-left text-gray-400">
-              <th className="px-4 py-3 font-medium">Ism-familiya</th>
-              <th className="px-4 py-3 font-medium">Login</th>
-              <th className="px-4 py-3 font-medium">Roli</th>
-              <th className="px-4 py-3 font-medium">Filial</th>
-              <th className="px-4 py-3 font-medium">Shu oy</th>
-              <th className="px-4 py-3 font-medium">Amallar</th>
+              <th className="px-4 py-3 font-medium">{t.employees.name}</th>
+              <th className="px-4 py-3 font-medium">{t.employees.login}</th>
+              <th className="px-4 py-3 font-medium">{t.employees.role}</th>
+              <th className="px-4 py-3 font-medium">{t.employees.branch}</th>
+              <th className="px-4 py-3 font-medium">{t.employees.thisMonth}</th>
+              <th className="px-4 py-3 font-medium">{t.common.actions}</th>
             </tr>
           </thead>
           <tbody>
@@ -208,16 +205,16 @@ export function UserTable({
                     </div>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs">{u.login}</td>
-                  <td className="px-4 py-3">{roleLabels[u.role] ?? u.role}</td>
+                  <td className="px-4 py-3">{t.roles[u.role as "OWNER" | "SELLER"] ?? u.role}</td>
                   <td className="px-4 py-3 text-gray-400">
-                    {u.branch?.name ?? "— (barcha filiallar)"}
+                    {u.branch?.name ?? `— ${t.employees.allBranches}`}
                   </td>
                   <td className="px-4 py-3 text-xs">
                     {stat && stat.count > 0 ? (
                       <div className="space-y-0.5">
-                        <div className="text-white">{stat.count} ta sotuv</div>
+                        <div className="text-white">{stat.count} {t.employees.salesCount}</div>
                         <div className="text-gray-500">
-                          Foyda:{" "}
+                          {t.phoneForm.profit}:{" "}
                           <span
                             className={
                               stat.profit >= 0 ? "text-green-400" : "text-red-400"
@@ -237,7 +234,7 @@ export function UserTable({
                         onClick={() => setEditUser(u)}
                         className="text-xs text-blue-400 hover:text-blue-300"
                       >
-                        Tahrirlash
+                        {t.common.edit}
                       </button>
                       {u.id !== currentUserId && (
                         <button
@@ -253,8 +250,8 @@ export function UserTable({
                           {busyId === u.id
                             ? "..."
                             : u.deletedAt
-                              ? "Blokdan chiqarish"
-                              : "Bloklash"}
+                              ? t.employees.unblock
+                              : t.employees.block}
                         </button>
                       )}
                     </div>
@@ -270,6 +267,7 @@ export function UserTable({
 }
 
 function UserBadges({ user }: { user: UserRow }) {
+  const t = useT();
   return (
     <span className="flex flex-wrap gap-1.5">
       <span
@@ -280,11 +278,11 @@ function UserBadges({ user }: { user: UserRow }) {
             : "bg-blue-500/15 text-blue-300"
         )}
       >
-        {roleLabels[user.role] ?? user.role}
+        {t.roles[user.role as "OWNER" | "SELLER"] ?? user.role}
       </span>
       {user.deletedAt && (
         <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-400">
-          Bloklangan
+          {t.employees.blocked}
         </span>
       )}
     </span>

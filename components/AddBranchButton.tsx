@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/client";
 
 const initialForm = { name: "", address: "", phoneNumber: "" };
 
 export function AddBranchButton() {
   const router = useRouter();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState<string | null>(null);
@@ -24,13 +26,13 @@ export function AddBranchButton() {
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Xatolik yuz berdi");
+      if (!res.ok) throw new Error(data.error ?? t.common.error);
 
       setOpen(false);
       setForm(initialForm);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
@@ -42,20 +44,20 @@ export function AddBranchButton() {
         onClick={() => setOpen(true)}
         className="rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-neon-pink transition hover:opacity-90"
       >
-        + Filial qo&apos;shish
+        {t.branches.add}
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
           <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#1a0a2e] p-6 sm:rounded-2xl">
             <h2 className="mb-4 text-lg font-semibold text-white">
-              Yangi filial qo&apos;shish
+              {t.branches.addTitle}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Nomi
+                  {t.branches.name}
                 </label>
                 <input
                   type="text"
@@ -69,13 +71,13 @@ export function AddBranchButton() {
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Manzil
+                  {t.branches.address}
                 </label>
                 <input
                   type="text"
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  placeholder="Namangan sh., ..."
+                  placeholder="Namangan, ..."
                   required
                   className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
                 />
@@ -83,7 +85,7 @@ export function AddBranchButton() {
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Telefon raqami
+                  {t.branches.phone}
                 </label>
                 <input
                   type="text"
@@ -109,14 +111,14 @@ export function AddBranchButton() {
                   onClick={() => setOpen(false)}
                   className="flex-1 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5"
                 >
-                  Bekor qilish
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  {submitting ? "Saqlanmoqda..." : "Saqlash"}
+                  {submitting ? t.common.saving : t.common.save}
                 </button>
               </div>
             </form>

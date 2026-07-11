@@ -15,6 +15,7 @@ import { ProfitReportTable } from "@/components/ProfitReportTable";
 import { SellerPerformanceTable } from "@/components/SellerPerformanceTable";
 import { RevenueChart } from "@/components/RevenueChart";
 import { ExportExcelButton } from "@/components/ExportExcelButton";
+import { getDict } from "@/lib/i18n/server";
 import type { Branch } from "@prisma/client";
 
 interface HisobotlarPageProps {
@@ -31,6 +32,7 @@ export default async function HisobotlarPage({
   }
 
   const params = await searchParams;
+  const t = await getDict();
   const branches = await listBranches(user);
   const branchId = resolveBranchId(
     user,
@@ -39,11 +41,7 @@ export default async function HisobotlarPage({
   );
 
   if (!branchId) {
-    return (
-      <div className="text-gray-400">
-        Hali filial qo&apos;shilmagan.
-      </div>
-    );
+    return <div className="text-gray-400">{t.branches.empty}</div>;
   }
 
   const [topModels, branchComparison, profitReport, revenueSeries, sellerPerformance] =
@@ -58,43 +56,43 @@ export default async function HisobotlarPage({
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-white">Hisobotlar</h1>
+        <h1 className="text-2xl font-semibold text-white">{t.reports.title}</h1>
         <ExportExcelButton branchId={branchId} />
       </div>
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-white">
-          Tushum va foyda — oxirgi 30 kun
+          {t.reports.revenue30}
         </h2>
         <RevenueChart data={revenueSeries} />
       </section>
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-white">
-          Filiallar taqqoslash (shu oy)
+          {t.reports.branchCompare}
         </h2>
         <BranchComparisonTable rows={branchComparison} />
       </section>
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-white">
-          Xodimlar bo&apos;yicha hisobot (shu oy)
+          {t.reports.sellerReport}
         </h2>
         <SellerPerformanceTable rows={sellerPerformance} />
       </section>
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-white">
-          Eng ko&apos;p sotilgan modellar
+          {t.reports.topModels}
         </h2>
         <TopModelsTable rows={topModels} />
       </section>
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-white">
-          Foyda hisobi —{" "}
+          {t.reports.profitReport} —{" "}
           <span className="text-gray-400">
-            jami {profitReport.totalProfit.toLocaleString("uz-UZ")} so&apos;m
+            {t.reports.total} {profitReport.totalProfit.toLocaleString("uz-UZ")} so&apos;m
           </span>
         </h2>
         <ProfitReportTable rows={profitReport.rows} />

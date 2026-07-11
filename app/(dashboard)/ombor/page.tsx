@@ -8,6 +8,7 @@ import { ImportPhonesButton } from "@/components/ImportPhonesButton";
 import { PhoneFiltersBar } from "@/components/PhoneFiltersBar";
 import { getUsdRate } from "@/lib/exchange-rate";
 import { formatMoney } from "@/lib/currency";
+import { getDict } from "@/lib/i18n/server";
 import type { Branch, PhoneCondition, PhoneStatus } from "@prisma/client";
 
 interface OmborPageProps {
@@ -24,6 +25,7 @@ interface OmborPageProps {
 export default async function OmborPage({ searchParams }: OmborPageProps) {
   const user = await requireUser();
   const params = await searchParams;
+  const t = await getDict();
 
   const branches = await listBranches(user);
   const branchId = resolveBranchId(
@@ -33,12 +35,7 @@ export default async function OmborPage({ searchParams }: OmborPageProps) {
   );
 
   if (!branchId) {
-    return (
-      <div className="text-gray-400">
-        Hali filial qo&apos;shilmagan. Avval &quot;Filiallar&quot; bo&apos;limidan
-        filial qo&apos;shing.
-      </div>
-    );
+    return <div className="text-gray-400">{t.branches.empty}</div>;
   }
 
   const showArchive = params.arxiv === "1";
@@ -59,12 +56,12 @@ export default async function OmborPage({ searchParams }: OmborPageProps) {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-white">
-            {showArchive ? "Arxiv — o'tgan oylarda sotilganlar" : "Ombor"}
+            {showArchive ? t.inventory.archiveView : t.inventory.title}
           </h1>
           <p className="mt-1 text-xs text-gray-500">
             {showArchive
-              ? "Bu telefonlar o'tgan oylarda sotilgan va arxivga o'tkazilgan. Ma'lumot o'chirilmagan — hisobotlarda to'liq saqlanadi."
-              : `Kurs (CBU): 1$ = ${formatMoney(usdRate, "UZS")}`}
+              ? t.inventory.archiveNote
+              : `CBU: 1$ = ${formatMoney(usdRate, "UZS")}`}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/client";
 
 interface PhoneRow {
   id: string;
@@ -43,6 +44,7 @@ export function SellModal({
   currentUserId,
 }: SellModalProps) {
   const router = useRouter();
+  const t = useT();
   const [paymentType, setPaymentType] = useState<PaymentType>("CASH");
   // Kim sotyapti — sukut bo'yicha hozir kirgan foydalanuvchi
   const [sellerId, setSellerId] = useState(currentUserId ?? "");
@@ -95,12 +97,12 @@ export function SellModal({
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Xatolik yuz berdi");
+      if (!res.ok) throw new Error(data.error ?? t.common.error);
 
       onClose();
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
@@ -110,19 +112,17 @@ export function SellModal({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
       <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#1a0a2e] p-6 sm:rounded-2xl">
         <h2 className="mb-1 text-lg font-semibold text-white">
-          Sotuv: {phone.brand} {phone.model}
+          {t.sellModal.title}: {phone.brand} {phone.model}
         </h2>
         <p className="mb-4 text-sm text-gray-500">
-          To&apos;lov turini tanlang va ma&apos;lumotlarni kiriting
+          {t.sellModal.subtitle}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Kim sotyapti — faqat OWNER'ga ko'rinadi (sotuvchi doim o'zi) */}
           {sellers.length > 0 && (
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                Kim sotyapti
-              </label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-300">{t.sellModal.whoSells}</label>
               <select
                 value={sellerId}
                 onChange={(e) => setSellerId(e.target.value)}
@@ -131,8 +131,8 @@ export function SellModal({
                 {sellers.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
-                    {s.role === "OWNER" ? " (egasi)" : ""}
-                    {s.id === currentUserId ? " — men" : ""}
+                    {s.role === "OWNER" ? t.sellModal.ownerSuffix : ""}
+                    {s.id === currentUserId ? t.sellModal.meSuffix : ""}
                   </option>
                 ))}
               </select>
@@ -142,7 +142,7 @@ export function SellModal({
           {/* PRD 3.5: To'lov turi - Naqd / Karta / Kredit */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-300">
-              To&apos;lov turi
+              {t.sellModal.paymentType}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(["CASH", "CARD", "CREDIT"] as PaymentType[]).map((type) => (
@@ -156,7 +156,7 @@ export function SellModal({
                       : "border-white/10 bg-black/30 text-gray-300 hover:bg-white/5"
                   }`}
                 >
-                  {type === "CASH" ? "Naqd" : type === "CARD" ? "Karta" : "Kredit"}
+                  {type === "CASH" ? t.sellModal.cash : type === "CARD" ? t.sellModal.card : t.sellModal.credit}
                 </button>
               ))}
             </div>
@@ -164,7 +164,7 @@ export function SellModal({
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-300">
-              Valyuta
+              {t.sellModal.currency}
             </label>
             <div className="grid grid-cols-2 gap-2">
               {(["UZS", "USD"] as const).map((cur) => (
@@ -178,7 +178,7 @@ export function SellModal({
                       : "border-white/10 bg-black/30 text-gray-300 hover:bg-white/5"
                   }`}
                 >
-                  {cur === "UZS" ? "So'm" : "$ Dollar"}
+                  {cur === "UZS" ? t.sellModal.som : t.sellModal.dollar}
                 </button>
               ))}
             </div>
@@ -186,7 +186,7 @@ export function SellModal({
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-300">
-              Sotuv summasi ({currency === "USD" ? "$" : "so'm"})
+              {t.sellModal.amount} ({currency === "USD" ? "$" : "so'm"})
             </label>
             <input
               type="number"
@@ -202,12 +202,12 @@ export function SellModal({
           {paymentType === "CREDIT" && (
             <div className="space-y-3 rounded-lg border border-white/10 bg-black/20 p-3">
               <p className="text-xs font-medium text-gray-400">
-                Mijoz ma&apos;lumotlari
+                {t.sellModal.customerInfo}
               </p>
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Ism-familiya
+                  {t.sellModal.fullName}
                 </label>
                 <input
                   type="text"
@@ -220,7 +220,7 @@ export function SellModal({
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Telefon raqami
+                  {t.sellModal.phoneNumber}
                 </label>
                 <input
                   type="text"
@@ -234,7 +234,7 @@ export function SellModal({
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Boshlang&apos;ich to&apos;lov
+                  {t.sellModal.initialPayment}
                 </label>
                 <input
                   type="number"
@@ -248,7 +248,7 @@ export function SellModal({
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  To&apos;lov rejasi
+                  {t.sellModal.plan}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -260,7 +260,7 @@ export function SellModal({
                         : "border-white/10 text-gray-400 hover:bg-white/5"
                     }`}
                   >
-                    Bir martalik
+                    {t.sellModal.oneTime}
                   </button>
                   <button
                     type="button"
@@ -271,14 +271,14 @@ export function SellModal({
                         : "border-white/10 text-gray-400 hover:bg-white/5"
                     }`}
                   >
-                    Oylik
+                    {t.sellModal.monthly}
                   </button>
                 </div>
               </div>
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  To&apos;lov muddati
+                  {t.sellModal.dueDate}
                 </label>
                 <input
                   type="date"
@@ -303,14 +303,14 @@ export function SellModal({
               onClick={onClose}
               className="flex-1 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5"
             >
-              Bekor qilish
+              {t.common.cancel}
             </button>
             <button
               type="submit"
               disabled={submitting}
               className="flex-1 rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {submitting ? "Saqlanmoqda..." : "Sotuvni yakunlash"}
+              {submitting ? t.common.saving : t.sellModal.finish}
             </button>
           </div>
         </form>

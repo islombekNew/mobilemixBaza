@@ -15,8 +15,10 @@ export async function loginAction(
   const rawLogin = formData.get("login");
   const password = formData.get("password");
 
+  // Xato xabarlari KOD sifatida qaytariladi ("required" | "invalid") —
+  // client tomoni joriy tilга tarjima qiladi (app/login/page.tsx).
   if (!rawLogin || !password) {
-    return { error: "Login va parolni kiriting" };
+    return { error: "required" };
   }
 
   // Telefon raqamli login uchun "+998" prefiksini kafolatlaymiz (client
@@ -32,7 +34,7 @@ export async function loginAction(
     return {};
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Login yoki parol noto'g'ri" };
+      return { error: "invalid" };
     }
     // NextAuth muvaffaqiyatli signIn paytida NEXT_REDIRECT xatosini tashlaydi —
     // bu kutilgan holat, qayta tashlaymiz.

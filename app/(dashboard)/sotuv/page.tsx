@@ -6,6 +6,7 @@ import { listActiveSellersForBranch } from "@/lib/users";
 import { resolveBranchId } from "@/lib/access-control";
 import { SellPhoneList } from "@/components/SellPhoneList";
 import { SalesHistory } from "@/components/SalesHistory";
+import { getDict } from "@/lib/i18n/server";
 import type { Branch } from "@prisma/client";
 
 interface SotuvPageProps {
@@ -15,6 +16,7 @@ interface SotuvPageProps {
 export default async function SotuvPage({ searchParams }: SotuvPageProps) {
   const user = await requireUser();
   const params = await searchParams;
+  const t = await getDict();
 
   const branches = await listBranches(user);
   const branchId = resolveBranchId(
@@ -24,12 +26,7 @@ export default async function SotuvPage({ searchParams }: SotuvPageProps) {
   );
 
   if (!branchId) {
-    return (
-      <div className="text-gray-400">
-        Hali filial qo&apos;shilmagan. Avval &quot;Filiallar&quot; bo&apos;limidan
-        filial qo&apos;shing.
-      </div>
-    );
+    return <div className="text-gray-400">{t.branches.empty}</div>;
   }
 
   const [phones, sales, sellers] = await Promise.all([
@@ -44,7 +41,7 @@ return (
   <div className="space-y-8">
     <div>
       <h1 className="mb-4 text-2xl font-semibold text-white">
-        Sotuv — omborda mavjud telefonlar
+        {t.sales.title}
       </h1>
       <SellPhoneList
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,7 +54,7 @@ return (
 
     <div>
       <h2 className="mb-4 text-lg font-semibold text-white">
-        Sotuvlar tarixi
+        {t.sales.history}
       </h2>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <SalesHistory sales={sales as any} isOwner={user.role === "OWNER"} />

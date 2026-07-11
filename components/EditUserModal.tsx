@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PasswordInput } from "@/components/PasswordInput";
+import { useT } from "@/lib/i18n/client";
 import type { UserRow } from "@/components/UserTable";
 
 interface BranchOption {
@@ -24,6 +25,7 @@ interface EditUserModalProps {
  */
 export function EditUserModal({ user, branches, isSelf, onClose }: EditUserModalProps) {
   const router = useRouter();
+  const t = useT();
   const [form, setForm] = useState({
     name: user.name,
     login: user.login,
@@ -53,11 +55,11 @@ export function EditUserModal({ user, branches, isSelf, onClose }: EditUserModal
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Xatolik yuz berdi");
+      if (!res.ok) throw new Error(data.error ?? t.common.error);
       router.refresh();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
@@ -67,13 +69,13 @@ export function EditUserModal({ user, branches, isSelf, onClose }: EditUserModal
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4">
       <div className="my-4 w-full max-w-md rounded-2xl border border-white/10 bg-[#1a0a2e] p-6">
         <h2 className="mb-4 text-lg font-semibold text-white">
-          Xodimni tahrirlash
+          {t.employees.editTitle}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-300">
-              Ism-familiya
+              {t.employees.name}
             </label>
             <input
               type="text"
@@ -86,7 +88,7 @@ export function EditUserModal({ user, branches, isSelf, onClose }: EditUserModal
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-300">
-              Login
+              {t.employees.login}
             </label>
             <input
               type="text"
@@ -101,23 +103,23 @@ export function EditUserModal({ user, branches, isSelf, onClose }: EditUserModal
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                Roli
+                {t.employees.role}
               </label>
               <select
                 value={form.role}
                 onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
                 disabled={isSelf}
-                title={isSelf ? "O'z rolingizni o'zgartira olmaysiz" : undefined}
+                title={isSelf ? t.employees.cannotChangeSelfRole : undefined}
                 className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#ff4fd8] disabled:opacity-50"
               >
-                <option value="OWNER">Egasi</option>
-                <option value="SELLER">Sotuvchi</option>
+                <option value="OWNER">{t.roles.OWNER}</option>
+                <option value="SELLER">{t.roles.SELLER}</option>
               </select>
             </div>
             {form.role === "SELLER" && (
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Filial
+                  {t.employees.branch}
                 </label>
                 <select
                   value={form.branchId}
@@ -125,7 +127,7 @@ export function EditUserModal({ user, branches, isSelf, onClose }: EditUserModal
                   required
                   className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#ff4fd8]"
                 >
-                  <option value="">— tanlang</option>
+                  <option value="">{t.employees.selectBranch}</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
@@ -138,9 +140,9 @@ export function EditUserModal({ user, branches, isSelf, onClose }: EditUserModal
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-300">
-              Yangi parol{" "}
+              {t.employees.newPassword}{" "}
               <span className="font-normal text-gray-500">
-                (bo&apos;sh qolsa — o&apos;zgarmaydi)
+                {t.employees.passwordKeepHint}
               </span>
             </label>
             <PasswordInput
@@ -163,14 +165,14 @@ export function EditUserModal({ user, branches, isSelf, onClose }: EditUserModal
               onClick={onClose}
               className="flex-1 rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5"
             >
-              Bekor qilish
+              {t.common.cancel}
             </button>
             <button
               type="submit"
               disabled={submitting}
               className="flex-1 rounded-lg bg-brand-gradient px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {submitting ? "Saqlanmoqda..." : "Saqlash"}
+              {submitting ? t.common.saving : t.common.save}
             </button>
           </div>
         </form>

@@ -2,11 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 export function PhoneFiltersBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const t = useT();
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -30,7 +32,7 @@ export function PhoneFiltersBar() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Model, brend yoki IMEI bo'yicha qidirish..."
+          placeholder={t.sales.searchPlaceholder}
           className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
         />
       </form>
@@ -40,10 +42,10 @@ export function PhoneFiltersBar() {
         onChange={(e) => updateParam("condition", e.target.value)}
         className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[#ff4fd8]"
       >
-        <option value="">Barcha holatlar</option>
-        <option value="NEW">Yangi</option>
-        <option value="USED">Ishlatilgan</option>
-        <option value="REFURBISHED">Qayta tiklangan</option>
+        <option value="">{t.phoneForm.condition} · {t.common.all}</option>
+        <option value="NEW">{t.phoneForm.conditionNew}</option>
+        <option value="USED">{t.phoneForm.conditionUsed}</option>
+        <option value="REFURBISHED">{t.phoneForm.conditionRefurb}</option>
       </select>
 
       <select
@@ -51,9 +53,9 @@ export function PhoneFiltersBar() {
         onChange={(e) => updateParam("status", e.target.value)}
         className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[#ff4fd8]"
       >
-        <option value="">Barcha statuslar</option>
-        <option value="IN_STOCK">Omborda</option>
-        <option value="SOLD">Sotilgan</option>
+        <option value="">{t.common.status} · {t.common.all}</option>
+        <option value="IN_STOCK">{t.inventory.inStockBadge}</option>
+        <option value="SOLD">{t.inventory.soldBadge}</option>
       </select>
 
       <button
@@ -65,7 +67,7 @@ export function PhoneFiltersBar() {
             : "border-white/10 bg-black/30 text-gray-300 hover:bg-white/5"
         }`}
       >
-        🗄 Arxiv
+        {t.inventory.archive}
       </button>
     </div>
   );

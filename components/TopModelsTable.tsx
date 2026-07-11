@@ -1,3 +1,4 @@
+import { getDict } from "@/lib/i18n/server";
 interface TopModelRow {
   model: string;
   brand: string;
@@ -9,11 +10,13 @@ interface TopModelsTableProps {
   rows: TopModelRow[];
 }
 
-export function TopModelsTable({ rows }: TopModelsTableProps) {
+export async function TopModelsTable({
+  rows }: TopModelsTableProps) {
+  const t = await getDict();
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-gray-400">
-        Hali sotuv ma&apos;lumotlari yo&apos;q
+        {t.reports.noData}
       </div>
     );
   }
@@ -23,9 +26,9 @@ export function TopModelsTable({ rows }: TopModelsTableProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-white/10 bg-white/5 text-left text-gray-400">
-            <th className="px-4 py-3 font-medium">Model</th>
-            <th className="px-4 py-3 font-medium">Sotilgan soni</th>
-            <th className="px-4 py-3 font-medium">Umumiy summa</th>
+            <th className="px-4 py-3 font-medium">{t.reports.model}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.soldCount}</th>
+            <th className="px-4 py-3 font-medium">{t.reports.totalAmount}</th>
           </tr>
         </thead>
         <tbody>

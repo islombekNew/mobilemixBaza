@@ -2,13 +2,9 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import type { DashboardPeriod } from "@/lib/reports";
+import { useT } from "@/lib/i18n/client";
 
-const OPTIONS: { value: DashboardPeriod; label: string }[] = [
-  { value: "today", label: "Bugun" },
-  { value: "yesterday", label: "Kecha" },
-  { value: "week", label: "Hafta" },
-  { value: "month", label: "Oy" },
-];
+const OPTIONS: DashboardPeriod[] = ["today", "yesterday", "week", "month"];
 
 interface DashboardPeriodFilterProps {
   current: DashboardPeriod;
@@ -17,6 +13,7 @@ interface DashboardPeriodFilterProps {
 export function DashboardPeriodFilter({ current }: DashboardPeriodFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useT();
 
   function select(value: DashboardPeriod) {
     const params = new URLSearchParams(searchParams.toString());
@@ -28,15 +25,15 @@ export function DashboardPeriodFilter({ current }: DashboardPeriodFilterProps) {
     <div className="flex gap-2">
       {OPTIONS.map((opt) => (
         <button
-          key={opt.value}
-          onClick={() => select(opt.value)}
+          key={opt}
+          onClick={() => select(opt)}
           className={`rounded-lg border px-4 py-1.5 text-sm font-medium transition-colors ${
-            current === opt.value
+            current === opt
               ? "border-[#ff4fd8]/50 bg-[#ff4fd8]/15 text-[#ff4fd8]"
               : "border-white/10 text-gray-400 hover:bg-white/5"
           }`}
         >
-          {opt.label}
+          {t.period[opt]}
         </button>
       ))}
     </div>

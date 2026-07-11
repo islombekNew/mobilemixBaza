@@ -4,25 +4,27 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { Role } from "@prisma/client";
 import clsx from "clsx";
+import { useT } from "@/lib/i18n/client";
 
 interface DashboardNavProps {
   role: Role;
 }
 
 const navItems = [
-  { href: "/dashboard", label: "Bosh sahifa", roles: ["OWNER", "SELLER"] as Role[] },
-  { href: "/ombor", label: "Ombor", roles: ["OWNER", "SELLER"] as Role[] },
-  { href: "/sotuv", label: "Sotuv", roles: ["OWNER", "SELLER"] as Role[] },
-  { href: "/mijozlar", label: "Mijozlar", roles: ["OWNER", "SELLER"] as Role[] },
-  { href: "/hisobotlar", label: "Hisobotlar", roles: ["OWNER"] as Role[] },
-  { href: "/filiallar", label: "Filiallar", roles: ["OWNER"] as Role[] },
-  { href: "/xodimlar", label: "Xodimlar", roles: ["OWNER"] as Role[] },
-];
+  { href: "/dashboard", key: "home", roles: ["OWNER", "SELLER"] as Role[] },
+  { href: "/ombor", key: "inventory", roles: ["OWNER", "SELLER"] as Role[] },
+  { href: "/sotuv", key: "sales", roles: ["OWNER", "SELLER"] as Role[] },
+  { href: "/mijozlar", key: "customers", roles: ["OWNER", "SELLER"] as Role[] },
+  { href: "/hisobotlar", key: "reports", roles: ["OWNER"] as Role[] },
+  { href: "/filiallar", key: "branches", roles: ["OWNER"] as Role[] },
+  { href: "/xodimlar", key: "employees", roles: ["OWNER"] as Role[] },
+] as const;
 
 export function DashboardNav({ role }: DashboardNavProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const branchId = searchParams.get("branchId");
+  const t = useT();
 
   return (
     <nav className="flex flex-col gap-1">
@@ -44,7 +46,7 @@ export function DashboardNav({ role }: DashboardNavProps) {
                   : "text-gray-300 hover:bg-white/5"
               )}
             >
-              {item.label}
+              {t.nav[item.key]}
             </Link>
           );
         })}

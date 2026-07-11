@@ -16,6 +16,8 @@ import {
   Legend,
 } from "recharts";
 import { formatAxisMoney } from "@/lib/currency";
+import { useT } from "@/lib/i18n/client";
+import { conditionLabel, type Dictionary } from "@/lib/i18n/dictionaries";
 
 interface DailySeries {
   date: string;
@@ -49,8 +51,13 @@ function shortDate(iso: string) {
   return `${d.getDate().toString().padStart(2, "0")}.${(d.getMonth() + 1).toString().padStart(2, "0")}`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({
+  active,
+  payload,
+  label,
+  t,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}: any & { t: Dictionary }) {
   if (!active || !payload?.length) return null;
   const hasLoss = payload.some(
     (p: { name: string; value: number }) => p.name === "profit" && p.value < 0
@@ -60,30 +67,38 @@ function CustomTooltip({ active, payload, label }: any) {
       <p className="mb-1 font-semibold text-gray-300">{shortDate(String(label))}</p>
       {payload.map((p: { name: string; value: number; color: string }, i: number) => (
         <p key={i} style={{ color: p.name === "profit" && p.value < 0 ? "#f87171" : p.color }}>
-          {p.name === "revenue" ? "Daromad" : "Foyda"}: {p.value.toLocaleString()} so&apos;m
+          {p.name === "revenue" ? t.dashboard.revenue : t.phoneForm.profit}:{" "}
+          {p.value.toLocaleString()}
         </p>
       ))}
       {hasLoss && (
         <p className="mt-1.5 border-t border-white/10 pt-1.5 text-[11px] leading-snug text-red-300/80">
-          ⚠️ Bu kunda telefon(lar) kelgan narxidan arzon sotilgan
+          ⚠️ {t.dashboard.cheaperHint}
         </p>
       )}
     </div>
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function BarTooltip({ active, payload }: any) {
+function BarTooltip({
+  active,
+  payload,
+  t,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}: any & { t: Dictionary }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-white/10 bg-[#1a0a2e] p-3 text-xs shadow-lg">
       <p className="font-semibold text-white">{payload[0]?.payload?.model}</p>
-      <p className="text-[#ff4fd8]">{payload[0]?.value} dona sotilgan</p>
+      <p className="text-[#ff4fd8]">
+        {payload[0]?.value} {t.common.pieces}
+      </p>
     </div>
   );
 }
 
 export function DashboardCharts({ dailySeries, topModels, conditionStats }: DashboardChartsProps) {
+  const t = useT();
   const hasRevenue = dailySeries.some((d) => d.revenue > 0);
   const hasModels = topModels.length > 0;
   const hasConditions = conditionStats.length > 0;
@@ -93,11 +108,11 @@ export function DashboardCharts({ dailySeries, topModels, conditionStats }: Dash
       {/* Area Chart — Kunlik daromad trendi */}
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h3 className="mb-4 text-sm font-semibold text-gray-300">
-          📈 Kunlik daromad va foyda
+          📈 {t.dashboard.dailyChart}
         </h3>
         {!hasRevenue ? (
           <div className="flex h-48 items-center justify-center text-sm text-gray-500">
-            Bu davrda sotuv amalga oshirilmagan
+            {t.dashboard.noSalesPeriod}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={220}>
@@ -127,11 +142,11 @@ export function DashboardCharts({ dailySeries, topModels, conditionStats }: Dash
                 tickLine={false}
                 width={52}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={(props) => <CustomTooltip {...props} t={t} />} />
               <Legend
                 formatter={(value) => (
                   <span className="text-xs text-gray-400">
-                    {value === "revenue" ? "Daromad" : "Foyda"}
+                    {value === "revenue" ? t.dashboard.revenue : t.phoneForm.profit}
                   </span>
                 )}
               />
@@ -166,11 +181,11 @@ export function DashboardCharts({ dailySeries, topModels, conditionStats }: Dash
         {/* Bar Chart — Eng ko'p sotilgan modellar */}
         <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h3 className="mb-4 text-sm font-semibold text-gray-300">
-            🏆 Eng ko&apos;p sotilgan modellar
+            🏆 {t.dashboard.topModels}
           </h3>
           {!hasModels ? (
             <div className="flex h-48 items-center justify-center text-sm text-gray-500">
-              Bu davrda sotuv yo&apos;q
+              {t.dashboard.noModels}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
@@ -195,7 +210,7 @@ export function DashboardCharts({ dailySeries, topModels, conditionStats }: Dash
                   tickLine={false}
                   width={110}
                 />
-                <Tooltip content={<BarTooltip />} />
+                <Tooltip content={(props) => <BarTooltip {...props} t={t} />} />
                 <Bar
                   dataKey="count"
                   radius={[0, 6, 6, 0]}
@@ -217,11 +232,11 @@ export function DashboardCharts({ dailySeries, topModels, conditionStats }: Dash
         {/* Pie Chart — Ombordagi telefonlar holati */}
         <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h3 className="mb-4 text-sm font-semibold text-gray-300">
-            📦 Ombor holati taqsimoti
+            📦 {t.dashboard.conditionSplit}
           </h3>
           {!hasConditions ? (
             <div className="flex h-48 items-center justify-center text-sm text-gray-500">
-              Ombor bo&apos;sh
+              {t.dashboard.emptyStock}
             </div>
           ) : (
             <div className="flex items-center gap-4">
@@ -245,7 +260,7 @@ export function DashboardCharts({ dailySeries, topModels, conditionStats }: Dash
                   </Pie>
                   <Tooltip
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    formatter={(value: any, name: any) => [`${value} dona`, name]}
+                    formatter={(value: any, name: any) => [`${value} ${t.common.pieces}`, name]}
                     contentStyle={{
                       background: "#1a0a2e",
                       border: "1px solid rgba(255,255,255,0.1)",
@@ -265,8 +280,12 @@ export function DashboardCharts({ dailySeries, topModels, conditionStats }: Dash
                       style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
                     />
                     <div>
-                      <p className="text-xs font-medium text-gray-200">{c.label}</p>
-                      <p className="text-xs text-gray-500">{c.count} dona</p>
+                      <p className="text-xs font-medium text-gray-200">
+                        {conditionLabel(c.condition, t)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {c.count} {t.common.pieces}
+                      </p>
                     </div>
                   </div>
                 ))}

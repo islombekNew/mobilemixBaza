@@ -3,19 +3,14 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { formatNumber, parseFormattedNumber } from "@/lib/format";
+import { useT } from "@/lib/i18n/client";
+import { warrantyLabel } from "@/lib/i18n/dictionaries";
 
 interface AddPhoneButtonProps {
   branchId: string;
 }
 
-const WARRANTY_OPTIONS = [
-  { value: 0,  label: "Kafolatsiz" },
-  { value: 1,  label: "1 oy" },
-  { value: 3,  label: "3 oy" },
-  { value: 6,  label: "6 oy" },
-  { value: 12, label: "1 yil" },
-  { value: 24, label: "2 yil" },
-];
+const WARRANTY_VALUES = [0, 1, 3, 6, 12, 24];
 
 const RAM_OPTIONS = [2, 3, 4, 6, 8, 12, 16];
 
@@ -40,6 +35,7 @@ const initialForm = {
 
 export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
   const router = useRouter();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState<string | null>(null);
@@ -88,13 +84,13 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Xatolik yuz berdi");
+      if (!res.ok) throw new Error(data.error ?? t.common.error);
 
       setOpen(false);
       setForm(initialForm);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
@@ -106,52 +102,52 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
         onClick={() => setOpen(true)}
         className="rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-neon-pink transition hover:opacity-90"
       >
-        + Telefon qo&apos;shish
+        {t.inventory.addPhone}
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4">
           <div className="my-4 w-full max-w-md rounded-2xl border border-white/10 bg-[#1a0a2e] p-6">
             <h2 className="mb-4 text-lg font-semibold text-white">
-              Yangi telefon qo&apos;shish
+              {t.phoneForm.addTitle}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-3">
 
               {/* Model va Brend */}
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Model" value={form.model} onChange={(v) => update("model", v)} placeholder="iPhone 13" required />
-                <Field label="Brend" value={form.brand} onChange={(v) => update("brand", v)} placeholder="Apple" required />
+                <Field label={t.phoneForm.model} value={form.model} onChange={(v) => update("model", v)} placeholder="iPhone 13" required />
+                <Field label={t.phoneForm.brand} value={form.brand} onChange={(v) => update("brand", v)} placeholder="Apple" required />
               </div>
 
               {/* Rang va Holati */}
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Rang" value={form.color} onChange={(v) => update("color", v)} placeholder="Qora" required />
+                <Field label={t.phoneForm.color} value={form.color} onChange={(v) => update("color", v)} required />
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-300">Holati</label>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-300">{t.phoneForm.condition}</label>
                   <select
                     value={form.condition}
                     onChange={(e) => update("condition", e.target.value)}
                     className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white outline-none focus:border-[#ff4fd8]"
                   >
-                    <option value="NEW">Yangi</option>
-                    <option value="USED">Ishlatilgan</option>
-                    <option value="REFURBISHED">Qayta tiklangan</option>
+                    <option value="NEW">{t.phoneForm.conditionNew}</option>
+                    <option value="USED">{t.phoneForm.conditionUsed}</option>
+                    <option value="REFURBISHED">{t.phoneForm.conditionRefurb}</option>
                   </select>
                 </div>
               </div>
 
               {/* Xotira va RAM */}
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Xotira (GB)" value={form.storageGB} onChange={(v) => update("storageGB", v)} type="number" min={1} required />
+                <Field label={t.phoneForm.storage} value={form.storageGB} onChange={(v) => update("storageGB", v)} type="number" min={1} required />
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-300">RAM (GB)</label>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-300">{t.phoneForm.ram}</label>
                   <select
                     value={form.ramGB}
                     onChange={(e) => update("ramGB", e.target.value)}
                     className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white outline-none focus:border-[#ff4fd8]"
                   >
-                    <option value="">— tanlanmagan</option>
+                    <option value="">{t.phoneForm.notSelected}</option>
                     {RAM_OPTIONS.map((r) => (
                       <option key={r} value={r}>{r} GB</option>
                     ))}
@@ -161,19 +157,19 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
 
               {/* IMEI */}
               <Field
-                label="IMEI"
+                label={t.phoneForm.imei}
                 value={form.imei}
                 onChange={(v) => update("imei", v)}
                 placeholder="356789012345671"
                 pattern="\d{15}"
-                title="IMEI 15 xonali raqamdan iborat bo'lishi kerak"
+                title="IMEI 15"
                 required
               />
 
               {/* Batareya holati — faqat ishlatilgan/refurbished uchun */}
               {isUsed && (
                 <Field
-                  label="Batareya holati (%)"
+                  label={t.phoneForm.battery}
                   value={form.batteryHealth}
                   onChange={(v) => update("batteryHealth", v)}
                   type="number"
@@ -185,7 +181,7 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
 
               {/* Narx valyutasi */}
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Narx valyutasi</label>
+                <label className="mb-1.5 block text-sm font-medium text-gray-300">{t.phoneForm.currency}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {(["UZS", "USD"] as const).map((cur) => (
                     <button
@@ -198,7 +194,7 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
                           : "border-white/10 bg-black/30 text-gray-300 hover:bg-white/5"
                       }`}
                     >
-                      {cur === "UZS" ? "So'm" : "$ Dollar"}
+                      {cur === "UZS" ? t.phoneForm.som : t.phoneForm.dollar}
                     </button>
                   ))}
                 </div>
@@ -207,7 +203,7 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
               {/* Tan narxi va Sotuv narxi */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-300">Tan narxi ({currencyLabel})</label>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-300">{t.phoneForm.costPrice} ({currencyLabel})</label>
                   <input
                     type="text"
                     value={form.costPrice}
@@ -217,7 +213,7 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-300">Sotuv narxi ({currencyLabel})</label>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-300">{t.phoneForm.salePrice} ({currencyLabel})</label>
                   <input
                     type="text"
                     value={form.salePrice}
@@ -232,7 +228,7 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
               {/* Avtomatik foyda hisoblash */}
               {profit !== null && (
                 <div className={`rounded-lg px-3 py-2 text-sm ${profit >= 0 ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-                  Foyda: <span className="font-semibold">
+                  {t.phoneForm.profit}: <span className="font-semibold">
                     {form.currency === "USD" ? `$${formatNumber(profit)}` : `${formatNumber(profit)} so'm`}
                   </span>
                 </div>
@@ -241,32 +237,32 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
               {/* Kafolat va Yetkazib beruvchi */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-300">Kafolat</label>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-300">{t.phoneForm.warranty}</label>
                   <select
                     value={form.warrantyMonths}
                     onChange={(e) => update("warrantyMonths", e.target.value)}
                     className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white outline-none focus:border-[#ff4fd8]"
                   >
-                    {WARRANTY_OPTIONS.map((w) => (
-                      <option key={w.value} value={w.value}>{w.label}</option>
+                    {WARRANTY_VALUES.map((w) => (
+                      <option key={w} value={w}>{warrantyLabel(w, t)}</option>
                     ))}
                   </select>
                 </div>
                 <Field
-                  label="Yetkazib beruvchi"
+                  label={t.phoneForm.supplier}
                   value={form.supplier}
                   onChange={(v) => update("supplier", v)}
-                  placeholder="Hamkor nomi"
+                  placeholder={t.phoneForm.supplierPlaceholder}
                 />
               </div>
 
               {/* Komplektatsiya */}
               <div>
-                <p className="mb-2 text-sm font-medium text-gray-300">Komplektatsiya</p>
+                <p className="mb-2 text-sm font-medium text-gray-300">{t.phoneForm.complectation}</p>
                 <div className="flex flex-wrap gap-3">
-                  <Checkbox label="Karobka bor" checked={form.hasBox} onChange={(v) => update("hasBox", v)} />
-                  <Checkbox label="Zaryadchik bor" checked={form.hasCharger} onChange={(v) => update("hasCharger", v)} />
-                  <Checkbox label="Hujjat bor" checked={form.hasDocuments} onChange={(v) => update("hasDocuments", v)} />
+                  <Checkbox label={t.phoneForm.hasBox} checked={form.hasBox} onChange={(v) => update("hasBox", v)} />
+                  <Checkbox label={t.phoneForm.hasCharger} checked={form.hasCharger} onChange={(v) => update("hasCharger", v)} />
+                  <Checkbox label={t.phoneForm.hasDocs} checked={form.hasDocuments} onChange={(v) => update("hasDocuments", v)} />
                 </div>
               </div>
 
@@ -282,14 +278,14 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
                   onClick={() => { setOpen(false); setForm(initialForm); }}
                   className="flex-1 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5"
                 >
-                  Bekor qilish
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  {submitting ? "Saqlanmoqda..." : "Saqlash"}
+                  {submitting ? t.common.saving : t.common.save}
                 </button>
               </div>
             </form>
