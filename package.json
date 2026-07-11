@@ -15,7 +15,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
-    "telegram:setup-webhook": "tsx scripts/setup-telegram-webhook.ts"
+    "telegram:setup-webhook": "tsx scripts/setup-telegram-webhook.ts",
+    "telegram:setup-shop-webhook": "tsx scripts/setup-shop-webhook.ts"
   },
   "overrides": {
     "postcss": "8.5.10"

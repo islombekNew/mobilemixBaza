@@ -8,8 +8,13 @@ const { auth } = NextAuth(authConfig);
 
 const PUBLIC_PATHS = ["/login"];
 
-// O'z Bearer-token tekshiruvi bor — session shart emas
-const PUBLIC_API_PATHS = ["/api/phones/sheets-sync"];
+// O'z token/secret tekshiruvi bor — session shart emas
+const PUBLIC_API_PATHS = [
+  "/api/phones/sheets-sync",
+  // Telegram webhook'lari: X-Telegram-Bot-Api-Secret-Token bilan himoyalangan
+  "/api/telegram/webhook",
+  "/api/telegram/shop",
+];
 
 export default auth((req) => {
   const { nextUrl } = req;

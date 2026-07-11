@@ -143,6 +143,9 @@ model Phone {
   // arxivga o'tadi (api/cron/archive-sold) — ombor ro'yxatida ko'rinmaydi,
   // lekin hisobotlar/tarix uchun bazada to'liq saqlanadi. O'CHIRILMAYDI.
   archivedAt     DateTime?
+  // Telegram orqali kelgan media (mijoz botida file_id bilan tez yuboriladi)
+  tgPhotoFileId  String?
+  tgVideoFileId  String?
   // Qo'shimcha maydonlar
   ramGB          Int?
   batteryHealth  Int?           // 0-100 foiz, faqat ishlatilgan/refurbished uchun
@@ -243,6 +246,49 @@ model DebtPayment {
 
   @@index([customerId])
   @@map("debt_payments")
+}
+
+// Aksesuarlar (g'ilof, zaryadnik, quloqchin...) — hozircha faqat mijoz boti
+// orqali qo'shiladi/qidiriladi; CRM sahifasi keyinroq qo'shiladi.
+model Accessory {
+  id            String    @id @default(cuid())
+  name          String
+  // Qaysi telefonga mos (masalan "iPhone 13 Pro") — qidiruv shu orqali ishlaydi
+  forModel      String?
+  price         Decimal   @db.Decimal(12, 2)
+  currency      Currency  @default(UZS)
+  quantity      Int       @default(1)
+  tgPhotoFileId String?
+  tgVideoFileId String?
+  description   String?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([deletedAt])
+  @@map("accessories")
+}
+
+// Mijoz botida "qaysi bo'limda turibdi" holati (telefon/aksesuar qidiruv,
+// admin bilan aloqa) — webhook stateless bo'lgani uchun bazada saqlanadi.
+model BotChatState {
+  chatId    String   @id
+  mode      String
+  updatedAt DateTime @updatedAt
+
+  @@map("bot_chat_states")
+}
+
+// Topilmagan qidiruvlar — "qaysi telefonlarga talab bor, lekin omborda yo'q"
+// tahlili uchun (keyinchalik hisobotga chiqariladi).
+model SearchMiss {
+  id        String   @id @default(cuid())
+  query     String
+  kind      String // phone | accessory
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("search_misses")
 }
 
 // USD/UZS kursi — kuniga bir marta CBU (Markaziy bank) API'sidan olinib,

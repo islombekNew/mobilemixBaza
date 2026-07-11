@@ -21,6 +21,40 @@ function getBotToken(): string | undefined {
   return process.env.TELEGRAM_BOT_TOKEN;
 }
 
+/** Mijozlar uchun do'kon boti tokeni (@istaganingniOl_bot). */
+export function getShopBotToken(): string | undefined {
+  return process.env.TELEGRAM_SHOP_BOT_TOKEN;
+}
+
+/**
+ * Istalgan Telegram Bot API metodini chaqiradi (istalgan token bilan).
+ * Mijoz boti sendPhoto/sendVideo/answerCallbackQuery kabi keng metodlar
+ * ishlatadi — har biriga alohida funksiya yozmasdan shu generik chaqiruv
+ * ishlatiladi. Hech qachon throw qilmaydi.
+ */
+export async function callTelegramApi(
+  token: string,
+  method: string,
+  payload: Record<string, unknown>
+): Promise<{ ok: boolean; result?: unknown; description?: string }> {
+  try {
+    const response = await fetch(`${TELEGRAM_API_BASE}/bot${token}/${method}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) {
+      console.error(`[telegram] ${method} xatosi:`, data.description ?? response.statusText);
+      return { ok: false, description: data.description };
+    }
+    return { ok: true, result: data.result };
+  } catch (error) {
+    console.error(`[telegram] ${method} so'rovida xatolik:`, error);
+    return { ok: false, description: String(error) };
+  }
+}
+
 /**
  * Admin chat ID'lari ro'yxati. TELEGRAM_ADMIN_CHAT_ID bitta ID yoki
  * vergul bilan ajratilgan bir nechta ID bo'lishi mumkin:
@@ -146,14 +180,15 @@ export async function replyToChat(chatId: string, text: string): Promise<Telegra
   return sendTelegramMessage(text, { chatId });
 }
 
-/** setWebhook chaqirig'ini bajaradi — scripts/setup-telegram-webhook.ts shu funksiyani ishlatadi. */
+/** setWebhook chaqirig'ini bajaradi — scripts/setup-*.ts skriptlari ishlatadi. */
 export async function setTelegramWebhook(
   webhookUrl: string,
-  secretToken: string
+  secretToken: string,
+  options: { token?: string; allowedUpdates?: string[] } = {}
 ): Promise<{ ok: boolean; description?: string }> {
-  const token = getBotToken();
+  const token = options.token ?? getBotToken();
   if (!token) {
-    throw new Error("TELEGRAM_BOT_TOKEN .env'da topilmadi");
+    throw new Error("Bot tokeni topilmadi");
   }
 
   const response = await fetch(`${TELEGRAM_API_BASE}/bot${token}/setWebhook`, {
@@ -162,9 +197,9 @@ export async function setTelegramWebhook(
     body: JSON.stringify({
       url: webhookUrl,
       secret_token: secretToken,
-      // Faqat oddiy matnli xabarlarni qabul qilamiz — boshqa update turlari
-      // (masalan, edited_message) hozircha kerak emas.
-      allowed_updates: ["message"],
+      // Admin botiga faqat "message" yetarli; mijoz botiga inline tugmalar
+      // uchun "callback_query" ham kerak.
+      allowed_updates: options.allowedUpdates ?? ["message"],
     }),
   });
 

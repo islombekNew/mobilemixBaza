@@ -102,9 +102,16 @@ export function parsePhoneCaption(caption: string): ParsedPhone | { error: strin
   return { brand, model, color, storageGB, imei, salePrice, currency, condition, branchName };
 }
 
-/** Telegram'dagi eng katta rasmni yuklab olib, File qilib qaytaradi. */
-async function downloadTelegramPhoto(fileId: string): Promise<File | null> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
+/**
+ * Telegram'dagi eng katta rasmni yuklab olib, File qilib qaytaradi.
+ * botToken berilmasa admin boti tokeni ishlatiladi (mijoz boti o'z
+ * tokenini uzatadi — file_id'lar botga bog'liq).
+ */
+export async function downloadTelegramPhoto(
+  fileId: string,
+  botToken?: string
+): Promise<File | null> {
+  const token = botToken ?? process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return null;
 
   try {
