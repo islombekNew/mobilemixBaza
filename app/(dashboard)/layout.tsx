@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/session";
 import { listBranches } from "@/lib/branches";
-import { MixMobileLogo } from "@/components/MixMobileLogo";
+import { MontraxLogo } from "@/components/MontraxLogo";
 import { BranchSwitcher } from "@/components/BranchSwitcher";
 import { DashboardNav } from "@/components/DashboardNav";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -22,7 +22,7 @@ export default async function DashboardLayout({
       <div className="flex min-h-screen">
         {/* Desktop sidebar — mobilda yashirin */}
         <aside className="hidden w-60 flex-col border-r border-white/10 bg-black/30 p-4 md:flex">
-          <MixMobileLogo className="mb-6 h-10 w-auto" />
+          <MontraxLogo className="mb-6 h-10 w-auto" />
 
           {user.role === "OWNER" && (
             <BranchSwitcher branches={branches} className="mb-6" />
@@ -44,7 +44,7 @@ export default async function DashboardLayout({
 
           {/* Mobil yuqori header — desktopda yashirin */}
           <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-white/10 bg-[#0d0517]/95 px-4 py-3 backdrop-blur-sm md:hidden">
-            <MixMobileLogo className="h-7 w-auto flex-shrink-0" />
+            <MontraxLogo className="h-7 w-auto flex-shrink-0" />
 
             <div className="flex flex-1 items-center justify-end gap-2">
               {user.role === "OWNER" && (

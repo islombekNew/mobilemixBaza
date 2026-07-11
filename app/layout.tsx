@@ -4,7 +4,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { LanguageProvider } from "@/lib/i18n/client";
 
 export const metadata: Metadata = {
-  title: "Mix Mobile — Ombor va Sotuv Boshqarish Tizimi",
+  title: "Montrax — Ombor va Sotuv Boshqarish Tizimi",
   description: "Istaganingiz shu yerda",
 };
 

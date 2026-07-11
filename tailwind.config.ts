@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Mix Mobile brend ranglari: pushti-binafsha neon
+        // Montrax brend ranglari: pushti-binafsha neon
         brand: {
           pink: "#ff4fd8",
           purple: "#a020c0",

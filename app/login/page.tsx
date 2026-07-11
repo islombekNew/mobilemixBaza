@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { loginAction, type LoginResult } from "./actions";
-import { MixMobileLogo } from "@/components/MixMobileLogo";
+import { MontraxLogo } from "@/components/MontraxLogo";
 import { PasswordInput } from "@/components/PasswordInput";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { looksLikePhone } from "@/lib/login-format";
@@ -49,7 +49,7 @@ export default function LoginPage() {
 
       <div className="relative z-10 w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <MixMobileLogo className="h-20 w-auto" />
+          <MontraxLogo className="h-16" showWordmark />
           <p className="text-sm tracking-wide text-gray-400">{t.login.tagline}</p>
         </div>
 

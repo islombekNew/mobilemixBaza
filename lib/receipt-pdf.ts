@@ -99,7 +99,7 @@ export async function generateReceiptPdf(sale: ReceiptSaleData): Promise<Uint8Ar
   }
 
   // --- Sarlavha ---
-  drawCenteredText("MIX MOBILE", 18, fontBold, brandPink);
+  drawCenteredText("MONTRAX", 18, fontBold, brandPink);
   drawCenteredText(sale.branch.name, 10, font, textGray);
   drawCenteredText(sale.branch.address, 8.5, font, textGray);
   drawCenteredText(sale.branch.phoneNumber, 8.5, font, textGray);

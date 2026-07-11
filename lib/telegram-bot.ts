@@ -18,7 +18,7 @@ import { postSoldPhonesToChannel, isChannelConfigured } from "@/lib/telegram-cha
 import { getUsdRate } from "@/lib/exchange-rate";
 
 const HELP_TEXT =
-  `🤖 <b>Mix Mobile bot</b>\n\n` +
+  `🤖 <b>Montrax bot</b>\n\n` +
   `Buyruqlar:\n` +
   `/holat — shu oy bo'yicha filiallar holati\n` +
   `/bugun — bugungi sotuvlar (har filial)\n` +
