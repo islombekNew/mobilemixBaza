@@ -15,6 +15,7 @@ const navItems = [
   { href: "/ombor", key: "inventory", roles: ["OWNER", "SELLER"] as Role[] },
   { href: "/sotuv", key: "sales", roles: ["OWNER", "SELLER"] as Role[] },
   { href: "/mijozlar", key: "customers", roles: ["OWNER", "SELLER"] as Role[] },
+  { href: "/aksesuarlar", key: "accessories", roles: ["OWNER", "SELLER"] as Role[] },
   { href: "/hisobotlar", key: "reports", roles: ["OWNER"] as Role[] },
   { href: "/filiallar", key: "branches", roles: ["OWNER"] as Role[] },
   { href: "/xodimlar", key: "employees", roles: ["OWNER"] as Role[] },

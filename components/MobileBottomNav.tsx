@@ -56,6 +56,17 @@ const navItems = [
     ),
   },
   {
+    href: "/aksesuarlar",
+    key: "accessories" as const,
+    roles: ["OWNER", "SELLER"] as Role[],
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <rect x="7" y="2" width="10" height="20" rx="2.5" />
+        <path d="M11 18h2" />
+      </svg>
+    ),
+  },
+  {
     href: "/hisobotlar",
     key: "reports" as const,
     roles: ["OWNER"] as Role[],

@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { PhonePhotoUploader } from "@/components/PhonePhotoUploader";
 import { TransferPhoneButton } from "@/components/TransferPhoneButton";
 import { EditPhoneModal } from "@/components/EditPhoneModal";
+import { AddPhoneButton } from "@/components/AddPhoneButton";
 import { formatMoney, type CurrencyCode } from "@/lib/currency";
 import { useT } from "@/lib/i18n/client";
 import { conditionLabel } from "@/lib/i18n/dictionaries";
@@ -65,6 +66,9 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
   const t = useT();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editPhone, setEditPhone] = useState<PhoneRow | null>(null);
+  // "Nusxa": bir xil telefondan ko'p kelganda boshidan yozmaslik uchun —
+  // qo'shish formasi shu telefon ma'lumotlari bilan (IMEI'siz) ochiladi
+  const [copyPhone, setCopyPhone] = useState<PhoneRow | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
@@ -102,6 +106,16 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
     <div>
       {editPhone && (
         <EditPhoneModal phone={editPhone} onClose={() => setEditPhone(null)} />
+      )}
+
+      {copyPhone && (
+        <AddPhoneButton
+          branchId={copyPhone.branchId}
+          prefill={copyPhone}
+          forceOpen
+          hideTrigger
+          onClose={() => setCopyPhone(null)}
+        />
       )}
 
       {error && (
@@ -210,6 +224,13 @@ export function PhoneTable({ phones, branches = [], isOwner = false, usdRate = 0
                     className="text-xs text-blue-400 hover:text-blue-300"
                   >
                     {t.common.edit}
+                  </button>
+                  <button
+                    onClick={() => setCopyPhone(phone)}
+                    title={t.inventory.copy}
+                    className="text-xs text-cyan-300 hover:text-cyan-200"
+                  >
+                    {t.inventory.copy}
                   </button>
                 </div>
                 {phone.status === "IN_STOCK" && (

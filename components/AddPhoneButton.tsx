@@ -6,8 +6,34 @@ import { formatNumber, parseFormattedNumber } from "@/lib/format";
 import { useT } from "@/lib/i18n/client";
 import { warrantyLabel } from "@/lib/i18n/dictionaries";
 
+/** Nusxalashda oldindan to'ldiriladigan maydonlar (IMEI har doim bo'sh qoladi). */
+export interface PhonePrefill {
+  model: string;
+  brand: string;
+  color: string;
+  storageGB: number;
+  ramGB?: number | null;
+  condition: string;
+  costPrice?: string | number | null;
+  salePrice: string | number;
+  currency?: string;
+  batteryHealth?: number | null;
+  warrantyMonths?: number;
+  supplier?: string | null;
+  hasBox?: boolean;
+  hasCharger?: boolean;
+  hasDocuments?: boolean;
+}
+
 interface AddPhoneButtonProps {
   branchId: string;
+  /** Berilsa — forma shu qiymatlar bilan ochiladi (bir xil telefon ko'p kelganda) */
+  prefill?: PhonePrefill;
+  /** true — modal darhol ochiq (tashqi boshqaruv, masalan "Nusxa" tugmasi) */
+  forceOpen?: boolean;
+  /** true — o'zining "+ Telefon qo'shish" tugmasi ko'rsatilmaydi */
+  hideTrigger?: boolean;
+  onClose?: () => void;
 }
 
 const WARRANTY_VALUES = [0, 1, 3, 6, 12, 24];
@@ -33,13 +59,50 @@ const initialForm = {
   supplier: "",
 };
 
-export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
+/** Prefill'dan forma boshlang'ich holatini yasaydi (IMEI bo'sh). */
+function formFromPrefill(prefill: PhonePrefill): typeof initialForm {
+  return {
+    ...initialForm,
+    model: prefill.model,
+    brand: prefill.brand,
+    color: prefill.color,
+    storageGB: String(prefill.storageGB),
+    ramGB: prefill.ramGB ? String(prefill.ramGB) : "",
+    condition: prefill.condition,
+    batteryHealth: prefill.batteryHealth ? String(prefill.batteryHealth) : "",
+    costPrice:
+      prefill.costPrice !== null && prefill.costPrice !== undefined
+        ? formatNumber(Number(prefill.costPrice))
+        : "",
+    salePrice: formatNumber(Number(prefill.salePrice)),
+    currency: (prefill.currency === "USD" ? "USD" : "UZS") as "UZS" | "USD",
+    warrantyMonths: String(prefill.warrantyMonths ?? 0),
+    supplier: prefill.supplier ?? "",
+    hasBox: prefill.hasBox ?? false,
+    hasCharger: prefill.hasCharger ?? false,
+    hasDocuments: prefill.hasDocuments ?? false,
+  };
+}
+
+export function AddPhoneButton({
+  branchId,
+  prefill,
+  forceOpen = false,
+  hideTrigger = false,
+  onClose,
+}: AddPhoneButtonProps) {
   const router = useRouter();
   const t = useT();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(initialForm);
+  const [open, setOpen] = useState(forceOpen);
+  const [form, setForm] = useState(prefill ? formFromPrefill(prefill) : initialForm);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  function close() {
+    setOpen(false);
+    setForm(prefill ? formFromPrefill(prefill) : initialForm);
+    onClose?.();
+  }
 
   function update(field: keyof typeof initialForm, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -86,8 +149,7 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t.common.error);
 
-      setOpen(false);
-      setForm(initialForm);
+      close();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.common.error);
@@ -98,12 +160,14 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-neon-pink transition hover:opacity-90"
-      >
-        {t.inventory.addPhone}
-      </button>
+      {!hideTrigger && (
+        <button
+          onClick={() => setOpen(true)}
+          className="rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-neon-pink transition hover:opacity-90"
+        >
+          {t.inventory.addPhone}
+        </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4">
@@ -275,7 +339,7 @@ export function AddPhoneButton({ branchId }: AddPhoneButtonProps) {
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setOpen(false); setForm(initialForm); }}
+                  onClick={close}
                   className="flex-1 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5"
                 >
                   {t.common.cancel}

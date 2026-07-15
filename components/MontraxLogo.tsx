@@ -15,14 +15,14 @@ export function MontraxLogo({ className = "", showWordmark = false }: MontraxLog
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/montrax-logo.png"
-          alt="Montrax"
+          alt="Mix Mobile"
           className="h-full w-auto rounded-xl"
         />
         <span
           className="bg-gradient-to-br from-[#ff4fd8] to-[#a020c0] bg-clip-text text-4xl font-bold italic text-transparent"
           style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
         >
-          Montrax
+          Mix Mobile
         </span>
       </div>
     );
@@ -32,7 +32,7 @@ export function MontraxLogo({ className = "", showWordmark = false }: MontraxLog
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/montrax-logo.png"
-      alt="Montrax"
+      alt="Mix Mobile"
       className={`rounded-lg ${className}`}
     />
   );

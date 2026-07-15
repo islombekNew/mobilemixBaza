@@ -1,4 +1,4 @@
-# Montrax — Ombor va Sotuv Boshqarish Tizimi
+# Mix Mobile — Ombor va Sotuv Boshqarish Tizimi
 
 Telefon do'koni uchun ko'p filialli ombor, sotuv, mijoz (qarz) va hisobot
 tizimi. Next.js 15 (App Router) + Prisma + PostgreSQL + NextAuth v5 asosida

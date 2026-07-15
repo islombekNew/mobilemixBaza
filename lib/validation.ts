@@ -176,6 +176,25 @@ export const userUpdateSchema = z.object({
   blocked: z.boolean().optional(),
 });
 
+export const accessoryCreateSchema = z.object({
+  name: z.string().trim().min(2, "Nomi kamida 2 belgi bo'lishi kerak").max(200),
+  forModel: z.string().trim().max(120).optional().nullable(),
+  price: positiveNumber,
+  currency: currencySchema.default("UZS"),
+  quantity: z.coerce.number().int().min(1, "Soni kamida 1 bo'lishi kerak").max(10000).default(1),
+  description: z.string().trim().max(500).optional().nullable(),
+});
+
+export const accessoryUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(200).optional(),
+  forModel: z.string().trim().max(120).optional().nullable(),
+  price: positiveNumber.optional(),
+  currency: currencySchema.optional(),
+  quantity: z.coerce.number().int().min(0).max(10000).optional(),
+  quantityDelta: z.coerce.number().int().min(-10000).max(10000).optional(),
+  description: z.string().trim().max(500).optional().nullable(),
+});
+
 export const phoneTransferSchema = z.object({
   targetBranchId: z.string().min(1, "Maqsad filial tanlanishi shart"),
 });

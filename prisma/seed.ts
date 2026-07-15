@@ -65,7 +65,7 @@ async function main() {
       update: {},
       create: {
         id: "branch-1",
-        name: "Montrax — Markaziy filial",
+        name: "Mix Mobile — Markaziy filial",
         address: "Namangan sh., Atabekov ko'chasi 12",
         phoneNumber: "+998901234567",
       },
@@ -116,7 +116,7 @@ async function main() {
   const REAL_BRANCHES: BranchSeed[] = [
     {
       id: "branch-namangan",
-      name: "Montrax — Namangan",
+      name: "Mix Mobile — Namangan",
       address: process.env.NAMANGAN_ADDRESS ?? "Namangan shahri",
       phoneNumber: process.env.NAMANGAN_PHONE ?? "+998900000001",
       sellerLoginEnv: "NAMANGAN_SELLER_LOGIN",
@@ -125,7 +125,7 @@ async function main() {
     },
     {
       id: "branch-toshkent",
-      name: "Montrax — Toshkent",
+      name: "Mix Mobile — Toshkent",
       address: process.env.TOSHKENT_ADDRESS ?? "Toshkent shahri",
       phoneNumber: process.env.TOSHKENT_PHONE ?? "+998900000002",
       sellerLoginEnv: "TOSHKENT_SELLER_LOGIN",

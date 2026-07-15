@@ -34,6 +34,8 @@ import {
   searchPhones,
   searchAccessories,
   logSearchMiss,
+  canonicalAccessoryCategory,
+  normalizeText,
   type PhoneSearchResult,
   type AccessorySearchResult,
 } from "./search";
@@ -53,10 +55,8 @@ const MAIN_KEYBOARD = {
 
 const GREETING =
   `👋 <b>Xush kelibsiz!</b>\n\n` +
-  `Bizda telefonlar va aksesuarlar sotiladi. Kerakli bo'limni tanlang:\n\n` +
-  `📱 <b>Telefonlar</b> — model nomini yozing (masalan: <i>iPhone 13</i>)\n` +
-  `🎧 <b>Aksesuarlar</b> — nima kerakligini yozing (masalan: <i>iPhone 13 Pro uchun g'ilof</i>)\n` +
-  `📞 <b>Admin bilan bog'lanish</b> — savolingizni yozib qoldiring`;
+  `Bizda telefonlar va g'iloflar sotiladi.\n\n` +
+  `Pastdagi tugmalardan birini bosing 👇`;
 
 const ADMIN_HELP =
   `🛠 <b>Admin imkoniyatlari (shu botda):</b>\n\n` +
@@ -170,7 +170,7 @@ function accessoryCaption(a: AccessorySearchResult): string {
 }
 
 function orderButton(kind: "phone" | "acc", id: string) {
-  return [[{ text: "🛒 Buyurtma berish", callback_data: `order:${kind}:${id}` }]];
+  return [[{ text: "🛒 Sotib olish", callback_data: `order:${kind}:${id}` }]];
 }
 
 // ---------------------------------------------------------------------------
@@ -203,8 +203,9 @@ async function handleAccessorySearch(chatId: string, query: string) {
     void logSearchMiss(query, "accessory");
     await send(
       chatId,
-      `😕 <b>"${escapeHtml(query)}"</b> bo'yicha aksesuar topilmadi.\n\n` +
-        `Boshqacha yozib ko'ring (masalan: <i>iPhone 13 Pro g'ilof</i>) yoki "${BTN_CONTACT}" orqali so'rang.`
+      `😕 Bunday g'ilof hozircha yo'q ekan.\n\n` +
+        `Boshqa model yozib ko'ring yoki "${BTN_CONTACT}" orqali so'rang — kelsa xabar beramiz.\n\n` +
+        `<i>Eslatma: hozircha faqat g'iloflar sotuvda, boshqa aksesuarlar tez orada qo'shiladi.</i>`
     );
     return;
   }
@@ -428,48 +429,87 @@ async function handleAdminMedia(chatId: string, caption: string, media: Incoming
 // Buyurtma (inline tugma)
 // ---------------------------------------------------------------------------
 
-async function handleOrderCallback(
-  callbackId: string,
-  chatId: string,
-  from: { id: number; first_name?: string; last_name?: string; username?: string },
-  data: string
-) {
-  const [, kind, id] = data.split(":");
-
-  let productText = "";
+/** Mahsulot matnini tayyorlaydi (admin xabari uchun). */
+async function productSummary(kind: string, id: string): Promise<string> {
   if (kind === "phone") {
     const p = await prisma.phone.findUnique({ where: { id } });
     if (p) {
-      productText =
+      return (
         `📱 ${p.brand} ${p.model} (${p.storageGB}GB, ${p.color})\n` +
         `💰 ${formatMoneyTg(Number(p.salePrice), p.currency === "USD" ? "USD" : "UZS")}\n` +
-        `🔢 IMEI: ${p.imei}`;
+        `🔢 IMEI: ${p.imei}`
+      );
     }
   } else {
     const a = await prisma.accessory.findUnique({ where: { id } });
     if (a) {
-      productText =
+      return (
         `🎧 ${a.name}${a.forModel ? ` (${a.forModel})` : ""}\n` +
-        `💰 ${formatMoneyTg(Number(a.price), a.currency === "USD" ? "USD" : "UZS")}`;
+        `💰 ${formatMoneyTg(Number(a.price), a.currency === "USD" ? "USD" : "UZS")}`
+      );
     }
   }
+  return "";
+}
 
-  // Adminlarga xabar — ASOSIY admin boti orqali (barcha bildirishnomalar bir joyda)
-  await sendTelegramMessage(
-    `🛒 <b>Yangi buyurtma so'rovi (botdan)</b>\n\n` +
-      `${escapeHtml(productText) || "Mahsulot topilmadi (o'chirilgan bo'lishi mumkin)"}\n\n` +
-      `👤 Mijoz: ${userLink(from)}\n` +
-      `🆔 Chat ID: <code>${from.id}</code>\n\n` +
-      `Mijozga yozish uchun ismini bosing.`
-  );
+/**
+ * "Sotib olish" bosilganda: telefon raqamini so'raymiz (mode = buy:kind:id).
+ * Raqam kelgach handleBuyPhoneNumber adminlarga to'liq buyurtma yuboradi.
+ */
+async function handleOrderCallback(
+  callbackId: string,
+  chatId: string,
+  data: string
+) {
+  const [, kind, id] = data.split(":");
+
+  await setMode(chatId, `buy:${kind}:${id}`);
 
   await callTelegramApi(token(), "answerCallbackQuery", {
     callback_query_id: callbackId,
-    text: "✅ So'rovingiz adminga yuborildi!",
   });
   await send(
     chatId,
-    `✅ <b>Buyurtma so'rovingiz qabul qilindi!</b>\n\nAdmin tez orada siz bilan bog'lanadi. Tezroq kerak bo'lsa: "${BTN_CONTACT}"`
+    `🛒 <b>Yaxshi tanlov!</b>\n\n` +
+      `Buyurtmani rasmiylashtirish uchun <b>telefon raqamingizni</b> yozing:\n` +
+      `<i>masalan: +998901234567</i>\n\n` +
+      `Admin qo'ng'iroq qilib, yetkazib berish yoki olib ketishni kelishib oladi.`
+  );
+}
+
+/** Buy rejimida kelgan matn — telefon raqami. Tekshirib, adminga yuboramiz. */
+async function handleBuyPhoneNumber(
+  chatId: string,
+  mode: string,
+  text: string,
+  from?: { id: number; first_name?: string; last_name?: string; username?: string }
+) {
+  const digits = text.replace(/\D/g, "");
+  if (digits.length < 7) {
+    await send(
+      chatId,
+      `📞 Telefon raqam noto'g'ri ko'rinadi. Qaytadan yozing:\n<i>masalan: +998901234567</i>`
+    );
+    return;
+  }
+
+  const [, kind, id] = mode.split(":");
+  const productText = await productSummary(kind, id);
+
+  await sendTelegramMessage(
+    `🛒 <b>YANGI BUYURTMA (mijoz botidan)</b>\n\n` +
+      `${escapeHtml(productText) || "Mahsulot topilmadi (o'chirilgan bo'lishi mumkin)"}\n\n` +
+      `📞 Mijoz raqami: <code>${escapeHtml(text.trim())}</code>\n` +
+      `👤 Telegram: ${from ? userLink(from) : "Noma'lum"}\n\n` +
+      `Tezroq qo'ng'iroq qiling! ☎️`
+  );
+
+  await setMode(chatId, "phone");
+  await send(
+    chatId,
+    `✅ <b>Buyurtmangiz qabul qilindi!</b>\n\n` +
+      `Admin tez orada <b>${escapeHtml(text.trim())}</b> raqamiga qo'ng'iroq qiladi.\n\n` +
+      `Yana biror narsa kerakmi? Pastdagi tugmalardan foydalaning 👇`
   );
 }
 
@@ -501,7 +541,7 @@ export async function handleShopUpdate(update: ShopUpdate): Promise<void> {
     const cq = update.callback_query;
     const chatId = String(cq.message?.chat?.id ?? cq.from.id);
     if (cq.data?.startsWith("order:")) {
-      await handleOrderCallback(cq.id, chatId, cq.from, cq.data);
+      await handleOrderCallback(cq.id, chatId, cq.data);
     } else {
       await callTelegramApi(token(), "answerCallbackQuery", { callback_query_id: cq.id });
     }
@@ -555,7 +595,12 @@ export async function handleShopUpdate(update: ShopUpdate): Promise<void> {
 
   if (text === BTN_ACCESSORIES) {
     await setMode(chatId, "accessory");
-    await send(chatId, `🎧 Qanday aksesuar kerak? Yozing:\n<i>masalan: iPhone 13 Pro uchun g'ilof, zaryadnik, quloqchin</i>`);
+    await send(
+      chatId,
+      `🎧 <b>Aksesuarlar</b>\n\n` +
+        `Hozircha faqat 📱 <b>g'iloflar</b> mavjud — boshqa aksesuarlar tez orada qo'shiladi.\n\n` +
+        `Qaysi telefonga g'ilof kerak? Yozing:\n<i>masalan: iPhone 13 Pro</i>`
+    );
     return;
   }
 
@@ -567,6 +612,12 @@ export async function handleShopUpdate(update: ShopUpdate): Promise<void> {
 
   // --- Matn: joriy rejimga qarab ---
   const mode = await getMode(chatId);
+
+  // Sotib olish jarayoni: kelgan matn — mijozning telefon raqami
+  if (mode.startsWith("buy:")) {
+    await handleBuyPhoneNumber(chatId, mode, text, from);
+    return;
+  }
 
   if (mode === "contact") {
     await sendTelegramMessage(
@@ -580,7 +631,12 @@ export async function handleShopUpdate(update: ShopUpdate): Promise<void> {
   }
 
   if (mode === "accessory") {
-    await handleAccessorySearch(chatId, text);
+    // Hozircha faqat g'iloflar: mijoz kategoriya yozmagan bo'lsa (masalan
+    // faqat "iPhone 13 Pro" desa) avtomatik g'ilof qidiruvi qilinadi
+    const hasCategory = normalizeText(text)
+      .split(" ")
+      .some((tok) => canonicalAccessoryCategory(tok));
+    await handleAccessorySearch(chatId, hasCategory ? text : `g'ilof ${text}`);
     return;
   }
 

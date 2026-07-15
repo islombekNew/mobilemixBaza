@@ -63,7 +63,7 @@ export function AddBranchButton() {
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Montrax — 2-filial"
+                  placeholder="Mix Mobile — 2-filial"
                   required
                   className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
                 />
