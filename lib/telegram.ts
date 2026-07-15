@@ -21,7 +21,7 @@ function getBotToken(): string | undefined {
   return process.env.TELEGRAM_BOT_TOKEN;
 }
 
-/** Mijozlar uchun do'kon boti tokeni (@istaganingniOl_bot). */
+/** Mijozlar uchun do'kon boti tokeni (@mix_mobile_sotuvbot). */
 export function getShopBotToken(): string | undefined {
   return process.env.TELEGRAM_SHOP_BOT_TOKEN;
 }

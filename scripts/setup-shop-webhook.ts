@@ -1,5 +1,5 @@
 /**
- * Mijozlar do'kon boti (@istaganingniOl_bot) uchun webhook o'rnatish.
+ * Mijozlar do'kon boti (@mix_mobile_sotuvbot) uchun webhook o'rnatish.
  * Deploy'dan keyin bir marta ishga tushiriladi:
  *
  *   WEBHOOK_URL="https://sizning-domain.vercel.app/api/telegram/shop" \

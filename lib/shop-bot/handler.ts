@@ -1,5 +1,5 @@
 /**
- * Mijozlar uchun do'kon boti (@istaganingniOl_bot) — asosiy mantiq.
+ * Mijozlar uchun do'kon boti (@mix_mobile_sotuvbot) — asosiy mantiq.
  *
  * MIJOZ uchun 3 bo'lim:
  *   📱 Telefonlar        — fuzzy qidiruv (ayfon/aypon/iphone -> iPhone)

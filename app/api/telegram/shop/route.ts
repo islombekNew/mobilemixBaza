@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { handleShopUpdate, type ShopUpdate } from "@/lib/shop-bot/handler";
 
 /**
- * Mijozlar uchun do'kon boti (@istaganingniOl_bot) webhook endpoint'i.
+ * Mijozlar uchun do'kon boti (@mix_mobile_sotuvbot) webhook endpoint'i.
  *
  * Xavfsizlik: `X-Telegram-Bot-Api-Secret-Token` header —
  * TELEGRAM_SHOP_WEBHOOK_SECRET bilan tekshiriladi (setWebhook'da o'rnatiladi).
