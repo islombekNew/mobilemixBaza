@@ -101,7 +101,7 @@ async function main() {
   // faqat parolni env'dagi qiymatga moslab yangilaydi.
   // --------------------------------------------------------------------
   console.log("");
-  console.log("🌱 Asosiy filiallar tayyorlanmoqda: Namangan, Toshkent...");
+  console.log("🌱 Asosiy filiallar tayyorlanmoqda: Andijon, Toshkent...");
 
   interface BranchSeed {
     id: string;
@@ -115,13 +115,16 @@ async function main() {
 
   const REAL_BRANCHES: BranchSeed[] = [
     {
+      // ID tarixiy sabablarga ko'ra "branch-namangan" bo'lib qoladi (jonli
+      // bazada shu ID ostida Andijon filiali ma'lumotlari bor), lekin nomi
+      // Andijon — asosiy filial.
       id: "branch-namangan",
-      name: "Mix Mobile — Namangan",
-      address: process.env.NAMANGAN_ADDRESS ?? "Namangan shahri",
-      phoneNumber: process.env.NAMANGAN_PHONE ?? "+998900000001",
-      sellerLoginEnv: "NAMANGAN_SELLER_LOGIN",
-      sellerPasswordEnv: "NAMANGAN_SELLER_PASSWORD",
-      sellerName: process.env.NAMANGAN_SELLER_NAME ?? "Namangan sotuvchisi",
+      name: "Mix Mobile — Andijon",
+      address: process.env.ANDIJON_ADDRESS ?? "Andijon shahri",
+      phoneNumber: process.env.ANDIJON_PHONE ?? "+998900000001",
+      sellerLoginEnv: "ANDIJON_SELLER_LOGIN",
+      sellerPasswordEnv: "ANDIJON_SELLER_PASSWORD",
+      sellerName: process.env.ANDIJON_SELLER_NAME ?? "Andijon sotuvchisi",
     },
     {
       id: "branch-toshkent",

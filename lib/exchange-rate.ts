@@ -124,3 +124,34 @@ export async function getUsdRate(): Promise<number> {
   // 4. Hech narsa topilmadi
   return FALLBACK_RATE;
 }
+
+/**
+ * Kursni MAJBURAN CBU'dan qayta oladi va bazani yangilaydi (bugungi qatorni
+ * upsert qiladi). Soatlik cron shu funksiyani chaqiradi — shu tariqa kurs
+ * kun davomida o'zgarsa ham (CBU yangilasa) tizim eng so'nggisini biladi,
+ * hech kim sahifa ochmasa ham.
+ *
+ * getUsdRate()'dan farqi: u bugungi qator bo'lsa qayta so'ramaydi (tejamkor),
+ * bu esa har safar CBU'ga boradi va yangi qiymatni yozadi.
+ * @returns yangilangan kurs yoki null (CBU ishlamasa)
+ */
+export async function refreshUsdRate(): Promise<number | null> {
+  const fresh = await fetchCbuUsdRate();
+  if (fresh === null) return null;
+
+  const today = todayTashkent();
+  try {
+    await prisma.exchangeRate.upsert({
+      where: { date: today },
+      create: { date: today, usdToUzs: fresh },
+      update: { usdToUzs: fresh },
+    });
+    // Xotira keshini ham darhol yangilaymiz
+    memoRate = fresh;
+    memoAt = Date.now();
+    return fresh;
+  } catch (error) {
+    console.error("[exchange-rate] Kursni yangilashda xatolik:", error);
+    return null;
+  }
+}
