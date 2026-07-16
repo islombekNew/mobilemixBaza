@@ -583,7 +583,32 @@ export async function handleShopUpdate(update: ShopUpdate): Promise<void> {
   // --- Buyruqlar va menyu tugmalari ---
   if (text === "/start" || text === "/yordam" || text === "/help") {
     await setMode(chatId, "phone");
-    await send(chatId, isAdmin ? `${GREETING}\n\n${ADMIN_HELP}` : GREETING);
+    const startText = isAdmin
+      ? `${GREETING}\n\n🛠 Siz adminsiz. Admin panel: /admin`
+      : GREETING;
+    await send(chatId, startText);
+    return;
+  }
+
+  // Admin panel — faqat adminlar uchun (telefon/aksesuar qo'shish qo'llanmasi + ombor holati)
+  if (text === "/admin" || text === "/panel") {
+    if (!isAdmin) {
+      await send(
+        chatId,
+        `🔒 Bu bo'lim faqat adminlar uchun.\n\nMijoz sifatida pastdagi tugmalardan foydalaning 👇`
+      );
+      return;
+    }
+    const [phoneCount, accessoryCount] = await Promise.all([
+      prisma.phone.count({ where: { status: "IN_STOCK", deletedAt: null, archivedAt: null } }),
+      prisma.accessory.count({ where: { deletedAt: null, quantity: { gt: 0 } } }),
+    ]);
+    await send(
+      chatId,
+      `🛠 <b>ADMIN PANEL</b>\n\n` +
+        `📦 Omborda hozir: <b>${phoneCount} ta telefon</b>, <b>${accessoryCount} ta aksesuar</b>\n\n` +
+        `${ADMIN_HELP}`
+    );
     return;
   }
 
@@ -607,6 +632,18 @@ export async function handleShopUpdate(update: ShopUpdate): Promise<void> {
   if (text === BTN_CONTACT) {
     await setMode(chatId, "contact");
     await send(chatId, `📞 Savolingizni shu yerga yozib qoldiring — adminga darhol yetkazamiz va tez orada javob berishadi.`);
+    return;
+  }
+
+  // Noma'lum /buyruq — telefon qidiruviga tushmasin (avval "/admin bo'yicha
+  // telefon topilmadi" kabi chalkash javob chiqardi)
+  if (text.startsWith("/")) {
+    await send(
+      chatId,
+      isAdmin
+        ? `Bunday buyruq yo'q 🤔\n\n🛠 Admin panel: /admin\n🔄 Boshlash: /start`
+        : `Bunday buyruq yo'q 🤔 Boshlash uchun /start yoki pastdagi tugmalardan foydalaning 👇`
+    );
     return;
   }
 
