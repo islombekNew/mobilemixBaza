@@ -16,6 +16,7 @@ import { getAllOverdueCustomers } from "@/lib/customers";
 import { escapeHtml, formatSum, formatMoneyTg, formatDate } from "@/lib/telegram";
 import { postSoldPhonesToChannel, isChannelConfigured } from "@/lib/telegram-channel";
 import { getUsdRate } from "@/lib/exchange-rate";
+import { isOwnerChat, addAdmin, removeAdmin, listAdmins } from "@/lib/telegram-admins";
 
 const HELP_TEXT =
   `🤖 <b>Mix Mobile bot</b>\n\n` +
@@ -221,11 +222,74 @@ export async function buildInventorySearchReply(rawQuery: string): Promise<strin
   );
 }
 
+// ---------------------------------------------------------------------------
+// Admin boshqaruvi buyruqlari — FAQAT EGA (env'dagi ID, hozir 7802923308)
+// ---------------------------------------------------------------------------
+
+const ADMIN_MGMT_HELP =
+  `👑 <b>Ega buyruqlari:</b>\n` +
+  `/adminqosh &lt;chat_id&gt; [ism] — yangi admin qo'shish\n` +
+  `/adminochir &lt;chat_id&gt; — adminni o'chirish\n` +
+  `/adminlar — adminlar ro'yxati\n\n` +
+  `Chat ID'ni bilish: yangi admin @userinfobot'ga /start yozsin — ` +
+  `qaytgan raqam uning chat ID'si.`;
+
+async function handleAdminMgmtCommand(
+  command: string,
+  rawText: string,
+  chatId: string
+): Promise<string> {
+  if (!isOwnerChat(chatId)) {
+    return "⛔ Bu buyruq faqat do'kon egasi uchun.";
+  }
+
+  const parts = rawText.trim().split(/\s+/).slice(1);
+
+  if (command === "/adminlar") {
+    const admins = await listAdmins();
+    const lines = admins.map((a, i) => {
+      const label = a.isOwner ? "👑 Ega" : `👤 ${escapeHtml(a.name ?? "Admin")}`;
+      return `${i + 1}. ${label} — <code>${a.chatId}</code>`;
+    });
+    return `📋 <b>Adminlar (${admins.length}):</b>\n\n${lines.join("\n")}\n\n${ADMIN_MGMT_HELP}`;
+  }
+
+  const targetId = parts[0];
+  if (!targetId || !/^\d{5,15}$/.test(targetId)) {
+    return `❌ Chat ID noto'g'ri. Masalan: <code>${command} 123456789 Aziz</code>\n\n${ADMIN_MGMT_HELP}`;
+  }
+
+  if (command === "/adminqosh") {
+    const name = parts.slice(1).join(" ") || null;
+    await addAdmin(targetId, name, chatId);
+    return (
+      `✅ <b>Admin qo'shildi:</b> <code>${targetId}</code>${name ? ` (${escapeHtml(name)})` : ""}\n\n` +
+      `U endi ikkala botda ham admin: hisobotlar, telefon/aksesuar qo'shish ` +
+      `va barcha bildirishnomalarni oladi.\n\n` +
+      `⚠️ Yangi admin AVVAL botga /start yozgan bo'lishi kerak — aks holda ` +
+      `Telegram unga xabar yuborishga ruxsat bermaydi.`
+    );
+  }
+
+  // /adminochir
+  if (isOwnerChat(targetId)) {
+    return "⛔ Egani o'chirib bo'lmaydi.";
+  }
+  const removed = await removeAdmin(targetId);
+  return removed
+    ? `🗑 Admin o'chirildi: <code>${targetId}</code>`
+    : `❌ Bunday admin topilmadi: <code>${targetId}</code>`;
+}
+
 /**
  * Kelgan matnli buyruqni ishlab, javob matnini qaytaradi.
  * "/" bilan boshlanmagan matn — ombor qidiruvi (sekretar bot).
+ * chatId — buyruq yuborgan admin chat'i (ega-buyruqlarini tekshirish uchun).
  */
-export async function handleTelegramCommand(rawText: string): Promise<string> {
+export async function handleTelegramCommand(
+  rawText: string,
+  chatId = ""
+): Promise<string> {
   const text = rawText.trim().toLowerCase();
   const command = text.split(/\s+/)[0];
 
@@ -238,7 +302,7 @@ export async function handleTelegramCommand(rawText: string): Promise<string> {
       case "/start":
       case "/yordam":
       case "/help":
-        return HELP_TEXT;
+        return isOwnerChat(chatId) ? `${HELP_TEXT}\n\n${ADMIN_MGMT_HELP}` : HELP_TEXT;
       case "/holat":
         return await buildHolatReport();
       case "/bugun":
@@ -247,6 +311,10 @@ export async function handleTelegramCommand(rawText: string): Promise<string> {
         return await buildQarzlarReport();
       case "/kanalga":
         return await buildKanalgaReport();
+      case "/adminqosh":
+      case "/adminochir":
+      case "/adminlar":
+        return await handleAdminMgmtCommand(command, rawText, chatId);
       default:
         return `Buyruq tushunilmadi. 👇\n\n${HELP_TEXT}`;
     }

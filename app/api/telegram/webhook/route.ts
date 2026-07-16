@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { replyToChat, getAdminChatIds } from "@/lib/telegram";
+import { replyToChat } from "@/lib/telegram";
+import { isAdminChat } from "@/lib/telegram-admins";
 import {
   handleTelegramCommand,
   buildInventorySearchReply,
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const isAdmin = getAdminChatIds().includes(String(chatId));
+  const isAdmin = await isAdminChat(String(chatId));
 
   try {
     // 5.3: Admin rasm (forward) yuborsa — omborga telefon qo'shish
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     if (isAdmin) {
       // Admin: to'liq buyruqlar + erkin matnda ombor qidiruvi
-      const responseText = await handleTelegramCommand(text);
+      const responseText = await handleTelegramCommand(text, String(chatId));
       await replyToChat(String(chatId), responseText);
     } else {
       // 5.4: Mijoz — faqat sekretar rejimi (AI'siz ombor qidiruvi)

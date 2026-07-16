@@ -129,7 +129,19 @@ export async function sendTelegramMessage(
 ): Promise<TelegramSendResult> {
   const token = getBotToken();
   // Aniq chatId berilsa — faqat unga; berilmasa — BARCHA adminlarga
-  const chatIds = options.chatId ? [options.chatId] : getAdminChatIds();
+  // (ega + bot orqali qo'shilganlar). Dinamik import — aylanma
+  // bog'liqlikning oldini oladi (telegram-admins shu fayldan import qiladi).
+  let chatIds: string[];
+  if (options.chatId) {
+    chatIds = [options.chatId];
+  } else {
+    try {
+      const { getEffectiveAdminChatIds } = await import("@/lib/telegram-admins");
+      chatIds = await getEffectiveAdminChatIds();
+    } catch {
+      chatIds = getAdminChatIds();
+    }
+  }
 
   if (!token || chatIds.length === 0) {
     console.warn(

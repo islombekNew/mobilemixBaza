@@ -269,6 +269,19 @@ model Accessory {
   @@map("accessories")
 }
 
+// Bot orqali qo'shilgan adminlar. EGA (TELEGRAM_ADMIN_CHAT_ID env'dagi ID,
+// hozir 7802923308) doimiy va o'chirib bo'lmaydi; qolganlarini ega
+// /adminqosh va /adminochir buyruqlari bilan boshqaradi. Ikkala bot ham
+// (admin + mijoz botlari) shu jadval + env ro'yxatini birga tekshiradi.
+model TelegramAdmin {
+  chatId    String   @id
+  name      String?
+  addedBy   String?
+  createdAt DateTime @default(now())
+
+  @@map("telegram_admins")
+}
+
 // Mijoz botida "qaysi bo'limda turibdi" holati (telefon/aksesuar qidiruv,
 // admin bilan aloqa) — webhook stateless bo'lgani uchun bazada saqlanadi.
 model BotChatState {

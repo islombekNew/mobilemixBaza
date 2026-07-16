@@ -19,11 +19,11 @@ import prisma from "@/lib/prisma";
 import {
   callTelegramApi,
   getShopBotToken,
-  getAdminChatIds,
   sendTelegramMessage,
   escapeHtml,
   formatMoneyTg,
 } from "@/lib/telegram";
+import { isAdminChat } from "@/lib/telegram-admins";
 import { getSystemOwnerUser } from "@/lib/access-control";
 import { createPhone } from "@/lib/phones";
 import { parsePhoneCaption, downloadTelegramPhoto } from "@/lib/telegram-inbox";
@@ -554,7 +554,7 @@ export async function handleShopUpdate(update: ShopUpdate): Promise<void> {
   if (message.chat?.type && message.chat.type !== "private") return;
 
   const chatId = String(chatIdRaw);
-  const isAdmin = getAdminChatIds().includes(chatId);
+  const isAdmin = await isAdminChat(chatId);
   const from = message.from;
 
   // --- Media (rasm/video) — faqat admin qo'shishi mumkin ---
