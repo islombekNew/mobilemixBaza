@@ -115,10 +115,8 @@ async function main() {
 
   const REAL_BRANCHES: BranchSeed[] = [
     {
-      // ID tarixiy sabablarga ko'ra "branch-namangan" bo'lib qoladi (jonli
-      // bazada shu ID ostida Andijon filiali ma'lumotlari bor), lekin nomi
-      // Andijon — asosiy filial.
-      id: "branch-namangan",
+      // Andijon — asosiy (1-) filial
+      id: "branch-andijon",
       name: "Mix Mobile — Andijon",
       address: process.env.ANDIJON_ADDRESS ?? "Andijon shahri",
       phoneNumber: process.env.ANDIJON_PHONE ?? "+998900000001",
