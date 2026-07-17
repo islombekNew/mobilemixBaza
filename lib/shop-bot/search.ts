@@ -80,6 +80,10 @@ export function canonicalBrand(word: string): string | null {
   for (const [canon, aliases] of Object.entries(BRAND_ALIASES)) {
     for (const alias of aliases) {
       if (word === alias) return canon;
+      // O'zbekcha qo'shimchalar: "samsungga", "iphonega", "ayfonni",
+      // "redmidan" — so'z brend nomi bilan BOSHLANSA, brend deb qabul
+      // qilamiz (mijozlar tabiiy shunday yozadi).
+      if (alias.length >= 4 && word.startsWith(alias)) return canon;
       // Uzunroq so'zlarda kichik xatoga yo'l qo'yamiz: "ayfonn", "samsng"
       if (alias.length >= 4 && word.length >= 4 && levenshtein(word, alias) <= 1) {
         return canon;
@@ -241,6 +245,8 @@ export function canonicalAccessoryCategory(word: string): string | null {
   for (const [canon, aliases] of Object.entries(ACCESSORY_CATEGORIES)) {
     for (const alias of aliases) {
       if (word === alias) return canon;
+      // "gilofga", "chexolni", "zaryadnikcha" — qo'shimchali yozuvlar
+      if (alias.length >= 4 && word.startsWith(alias)) return canon;
       if (alias.length >= 4 && word.length >= 4 && levenshtein(word, alias) <= 1) {
         return canon;
       }
@@ -311,15 +317,20 @@ export async function searchAccessories(
     const hayTokens = haystack.split(" ").filter(Boolean);
     let score = 0;
 
-    // Kategoriya: nom ichida kategoriya aliaslaridan biri bo'lishi kerak
+    // Kategoriya — QATTIQ FILTR EMAS, faqat bonus.
+    // Sababi: g'ilof "rezina oq shaffof" deb nomlangan bo'lishi mumkin —
+    // nomida "g'ilof" so'zi bo'lmaydi. Qattiq talab qilsak, mijoz hech
+    // narsa topa olmaydi.
     if (categories.size > 0) {
-      let catHit = false;
       for (const cat of categories) {
         const aliases = ACCESSORY_CATEGORIES[cat] ?? [];
-        if (aliases.some((a) => haystack.includes(a))) catHit = true;
+        if (aliases.some((a) => haystack.includes(a))) score += 5;
       }
-      if (!catHit) continue;
-      score += 5;
+      // Faqat kategoriya aytilgan bo'lsa (masalan shunchaki "g'ilof") —
+      // barcha aksesuarlarni ko'rsatamiz
+      if (canons.size === 0 && numbers.length === 0 && words.length === 0) {
+        score += 1;
+      }
     }
 
     // Brend/model mosligi (forModel yoki nom orqali)
