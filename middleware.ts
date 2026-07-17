@@ -20,7 +20,12 @@ export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth?.user;
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth");
-  const isPublicApiPath = PUBLIC_API_PATHS.includes(nextUrl.pathname);
+  // Cron route'lari o'zlari CRON_SECRET'ni tekshiradi — sessiya bo'lmagani
+  // uchun middleware ularni /login'ga yo'naltirmasligi kerak (aks holda
+  // Vercel Cron chaqiruvlari route'ga umuman yetib bormaydi).
+  const isPublicApiPath =
+    PUBLIC_API_PATHS.includes(nextUrl.pathname) ||
+    nextUrl.pathname.startsWith("/api/cron/");
   const isPublicPath =
     PUBLIC_PATHS.includes(nextUrl.pathname) || nextUrl.pathname === "/";
 
