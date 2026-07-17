@@ -282,6 +282,8 @@ const uz = {
     name: "Filial nomi",
     address: "Manzil",
     phone: "Telefon raqami",
+    tgAdmin: "Telegram admin (mijozlar boti uchun)",
+    tgAdminHint: "@'siz yozing, masalan: Mixmobile_admin",
     deleteConfirm:
       "filialini o'chirishni tasdiqlaysizmi?\n\nBo'sh filial butunlay o'chadi. Telefon/sotuv tarixi bo'lsa — faqat arxivlanadi (ma'lumot yo'qolmaydi).",
   },
@@ -587,6 +589,8 @@ const ru: typeof uz = {
     name: "Название филиала",
     address: "Адрес",
     phone: "Номер телефона",
+    tgAdmin: "Telegram-админ (для бота клиентов)",
+    tgAdminHint: "без @, например: Mixmobile_admin",
     deleteConfirm:
       "удалить этот филиал?\n\nПустой филиал удаляется полностью. При наличии истории телефонов/продаж — только архивируется (данные не теряются).",
   },
@@ -891,6 +895,8 @@ const en: typeof uz = {
     name: "Branch name",
     address: "Address",
     phone: "Phone number",
+    tgAdmin: "Telegram admin (for customer bot)",
+    tgAdminHint: "without @, e.g. Mixmobile_admin",
     deleteConfirm:
       "delete this branch?\n\nAn empty branch is deleted completely. If it has phone/sales history — it is only archived (no data loss).",
   },

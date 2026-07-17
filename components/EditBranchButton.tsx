@@ -17,6 +17,7 @@ export function EditBranchButton({ branch }: EditBranchButtonProps) {
     name: branch.name,
     address: branch.address ?? "",
     phoneNumber: branch.phoneNumber ?? "",
+    telegramUsername: branch.telegramUsername ?? "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +84,20 @@ export function EditBranchButton({ branch }: EditBranchButtonProps) {
                   onChange={(e) => setForm((p) => ({ ...p, phoneNumber: e.target.value }))}
                   className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white outline-none focus:border-[#ff4fd8]"
                 />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-300">
+                  {t.branches.tgAdmin}
+                </label>
+                <input
+                  type="text"
+                  value={form.telegramUsername}
+                  onChange={(e) => setForm((p) => ({ ...p, telegramUsername: e.target.value }))}
+                  placeholder="Mixmobile_admin"
+                  className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
+                />
+                <p className="mt-1 text-xs text-gray-500">{t.branches.tgAdminHint}</p>
               </div>
 
               {error && (

@@ -90,6 +90,9 @@ model Branch {
   name        String
   address     String
   phoneNumber String
+  // Shu filial admini Telegram username'i (@'siz, masalan "Mixmobile_admin").
+  // Mijozlar do'kon botida "Admin bilan bog'lanish" bosganda shu ko'rinadi.
+  telegramUsername String?
   // Arxivlangan filial ro'yxatlarda ko'rinmaydi (ichida telefon/sotuv
   // tarixi bo'lgan filial O'CHIRILMAYDI — faqat arxivlanadi)
   archivedAt  DateTime?

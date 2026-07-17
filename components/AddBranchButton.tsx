@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n/client";
 
-const initialForm = { name: "", address: "", phoneNumber: "" };
+const initialForm = { name: "", address: "", phoneNumber: "", telegramUsername: "" };
 
 export function AddBranchButton() {
   const router = useRouter();
@@ -97,6 +97,20 @@ export function AddBranchButton() {
                   required
                   className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
                 />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-300">
+                  {t.branches.tgAdmin}
+                </label>
+                <input
+                  type="text"
+                  value={form.telegramUsername}
+                  onChange={(e) => setForm({ ...form, telegramUsername: e.target.value })}
+                  placeholder="Mixmobile_admin"
+                  className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-[#ff4fd8]"
+                />
+                <p className="mt-1 text-xs text-gray-500">{t.branches.tgAdminHint}</p>
               </div>
 
               {error && (

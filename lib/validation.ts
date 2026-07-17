@@ -122,6 +122,14 @@ export const branchCreateSchema = z.object({
   name: z.string().trim().min(1, "Nomi kiritilishi shart"),
   address: z.string().trim().min(1, "Manzil kiritilishi shart"),
   phoneNumber: z.string().trim().min(5, "Telefon raqami kiritilishi shart"),
+  // Telegram username (@'siz). Mijoz botida "Admin bilan bog'lanish"da chiqadi.
+  telegramUsername: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/^@/, ""))
+    .pipe(z.string().regex(/^[a-zA-Z0-9_]{5,32}$/, "Telegram username 5-32 ta harf/raqam/_ bo'lishi kerak"))
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 export const userCreateSchema = z

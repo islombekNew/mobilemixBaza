@@ -21,12 +21,14 @@ export interface CreateBranchInput {
   name: string;
   address: string;
   phoneNumber: string;
+  telegramUsername?: string | null;
 }
 
 export interface UpdateBranchInput {
   name?: string;
   address?: string;
   phoneNumber?: string;
+  telegramUsername?: string | null;
 }
 
 export async function updateBranch(user: SessionUser, branchId: string, input: UpdateBranchInput) {

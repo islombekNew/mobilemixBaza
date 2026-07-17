@@ -133,6 +133,43 @@ async function getMode(chatId: string): Promise<string> {
   return st?.mode ?? "phone";
 }
 
+/**
+ * "Admin bilan bog'lanish" matni: har filialning o'z Telegram admini
+ * (Branch.telegramUsername) ro'yxat bo'lib chiqadi — mijoz kerakli
+ * filialga to'g'ridan-to'g'ri yozadi. Username kodda emas, bazada —
+ * har do'kon CRM'dan o'zinikini qo'yadi (Filiallar sahifasi).
+ */
+async function buildContactText(): Promise<string> {
+  let branches: { name: string; telegramUsername: string | null }[] = [];
+  try {
+    branches = await prisma.branch.findMany({
+      where: { archivedAt: null },
+      orderBy: { createdAt: "asc" },
+      select: { name: true, telegramUsername: true },
+    });
+  } catch (error) {
+    console.error("[shop-bot] Filiallarni o'qishda xatolik:", error);
+  }
+
+  const withAdmin = branches.filter((b) => b.telegramUsername);
+
+  if (withAdmin.length === 0) {
+    // Hech bir filialga username qo'yilmagan — eski (yozib qoldirish) yo'li
+    return `📞 Savolingizni shu yerga yozib qoldiring — adminga darhol yetkazamiz va tez orada javob berishadi.`;
+  }
+
+  const lines = withAdmin.map(
+    (b) => `📍 <b>${escapeHtml(b.name)}</b>\n     👉 @${escapeHtml(b.telegramUsername!)}`
+  );
+
+  return (
+    `📞 <b>Admin bilan bog'lanish</b>\n\n` +
+    `Kerakli filial adminiga to'g'ridan-to'g'ri yozing:\n\n` +
+    `${lines.join("\n\n")}\n\n` +
+    `Yoki savolingizni shu yerga yozib qoldiring — adminga yetkazamiz.`
+  );
+}
+
 /** Mijoz haqida havola matni (adminга yuborish uchun). */
 function userLink(from: { id: number; first_name?: string; last_name?: string; username?: string }) {
   const name = escapeHtml([from.first_name, from.last_name].filter(Boolean).join(" ") || "Mijoz");
@@ -631,7 +668,7 @@ export async function handleShopUpdate(update: ShopUpdate): Promise<void> {
 
   if (text === BTN_CONTACT) {
     await setMode(chatId, "contact");
-    await send(chatId, `📞 Savolingizni shu yerga yozib qoldiring — adminga darhol yetkazamiz va tez orada javob berishadi.`);
+    await send(chatId, await buildContactText());
     return;
   }
 

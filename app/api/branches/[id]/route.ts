@@ -8,6 +8,12 @@ const updateSchema = z.object({
   name: z.string().trim().min(1).optional(),
   address: z.string().trim().min(1).optional(),
   phoneNumber: z.string().trim().min(5).optional(),
+  telegramUsername: z
+    .string()
+    .trim()
+    .transform((s) => s.replace(/^@/, ""))
+    .optional()
+    .nullable(),
 });
 
 export async function PATCH(
