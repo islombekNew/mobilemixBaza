@@ -52,11 +52,15 @@ export async function getBranchDashboard(
 
   const monthStart = getPeriodStart(period);
 
-  const [usdRate, inStockCount, inAddedThisMonth, salesThisMonth, inStockPhones] = await Promise.all([
+  const [usdRate, inStockCount, accessoryCount, inAddedThisMonth, salesThisMonth, inStockPhones] = await Promise.all([
     getUsdRate(),
-    prisma.phone.count({ where: { branchId, status: "IN_STOCK" } }),
+    prisma.phone.count({ where: { branchId, status: "IN_STOCK", deletedAt: null, archivedAt: null } }),
+    // Aksesuarlar filialga bog'lanmagan (umumiy) — jami soni (dona)
+    prisma.accessory
+      .findMany({ where: { deletedAt: null, quantity: { gt: 0 } }, select: { quantity: true } })
+      .then((rows) => rows.reduce((s, a) => s + a.quantity, 0)),
     prisma.phone.findMany({
-      where: { branchId, createdAt: { gte: monthStart } },
+      where: { branchId, createdAt: { gte: monthStart }, deletedAt: null },
       select: { costPrice: true, currency: true },
     }),
     prisma.sale.findMany({
@@ -69,7 +73,7 @@ export async function getBranchDashboard(
       },
     }),
     prisma.phone.findMany({
-      where: { branchId, status: "IN_STOCK" },
+      where: { branchId, status: "IN_STOCK", deletedAt: null, archivedAt: null },
       select: { condition: true },
     }),
   ]);
@@ -173,6 +177,7 @@ export async function getBranchDashboard(
 
   return {
     inStockCount,
+    accessoryCount,
     incomingCount,
     incomingCostTotal,
     soldCount,
@@ -243,7 +248,7 @@ export async function compareBranches(user: SessionUser) {
   const results = await Promise.all(
     branches.map(async (branch: BranchRow) => {
       const [inStockCount, sales] = await Promise.all([
-        prisma.phone.count({ where: { branchId: branch.id, status: "IN_STOCK" } }),
+        prisma.phone.count({ where: { branchId: branch.id, status: "IN_STOCK", deletedAt: null, archivedAt: null } }),
         prisma.sale.findMany({
           where: { branchId: branch.id, saleDate: { gte: monthStart }, returnedAt: null },
           select: {
@@ -302,7 +307,7 @@ export async function getDailySummaryAllBranches(user: SessionUser) {
   const stats = await Promise.all(
     branches.map(async (branch: DailyBranchRow) => {
       const [inStockCount, salesToday] = await Promise.all([
-        prisma.phone.count({ where: { branchId: branch.id, status: "IN_STOCK" } }),
+        prisma.phone.count({ where: { branchId: branch.id, status: "IN_STOCK", deletedAt: null, archivedAt: null } }),
         prisma.sale.findMany({
           where: { branchId: branch.id, saleDate: { gte: dayStart }, returnedAt: null },
           select: {

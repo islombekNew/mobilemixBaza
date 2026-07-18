@@ -6,6 +6,7 @@ import { getDict } from "@/lib/i18n/server";
 interface DashboardStatsProps {
   stats: {
     inStockCount: number;
+    accessoryCount: number;
     incomingCount: number;
     incomingCostTotal: number;
     soldCount: number;
@@ -36,8 +37,9 @@ export async function DashboardStats({ stats }: DashboardStatsProps) {
   return (
     <div className="space-y-6">
       {/* Statistika kartalar */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard label={t.dashboard.inStock} value={String(stats.inStockCount)} icon="📦" />
+        <StatCard label={t.nav.accessories} value={String(stats.accessoryCount)} icon="🎧" />
         <StatCard
           label={t.dashboard.incoming}
           value={String(stats.incomingCount)}
